@@ -37,17 +37,13 @@ MOCK_PRODUCTS: list[dict] = [
         "daily_usage": 8,
         "context": (
             "Einfaches Baumwoll-T-Shirt, hoher Durchsatz. Preiskaempfe in der "
-            "Kategorie sind ueblich; Rabatte zum Monatsende koennen den Absatz "
-            "pushen, wenn der Lagerbestand noch hoch ist."
+            "Kategorie sind ueblich; bei niedrigem Lager Premium-Marge, "
+            "sonst knapp unter dem Wettbewerb."
         ),
         "strategy": {
-            "kind": "rule",
+            "kind": "formula",
             "config": {
-                "rules": [
-                    {"when": "stock < 20", "then": "cost_price * 2.5"},
-                    {"when": "competitor_price > 0", "then": "competitor_price - 1"},
-                ],
-                "fallback": "cost_price * 2",
+                "expression": "(stock < 20) * (cost_price * 2.5) + (stock >= 20) * (competitor_price - 1)"
             },
         },
     },
@@ -65,15 +61,8 @@ MOCK_PRODUCTS: list[dict] = [
             "gegen Monatsende (Gehaltseingang)."
         ),
         "strategy": {
-            "kind": "llm",
-            "config": {
-                "prompt_template": (
-                    "Schlage einen marktgerechten Verkaufspreis für '{name}' "
-                    "(Kategorie {category}) vor. Einkaufspreis {cost_price} EUR, "
-                    "Lagerbestand {stock}, Wettbewerber-Preis {competitor_price} EUR. "
-                    "Ziel: Marge ca. 40-60%."
-                )
-            },
+            "kind": "formula",
+            "config": {"expression": "cost_price * 1.8 + (day >= 20) * 0.5"},
         },
     },
     {
@@ -103,17 +92,12 @@ MOCK_PRODUCTS: list[dict] = [
         "daily_usage": 12,
         "context": (
             "Standard-USB-C-Ladekabel, hohe Stueckzahlen. Preisdumping in der "
-            "Kategorie ist Alltag, Marge kommt ueber Volumen."
+            "Kategorie ist Alltag, Marge kommt ueber Volumen. Bei knappem "
+            "Lager keinen Rabatt geben."
         ),
         "strategy": {
-            "kind": "rule",
-            "config": {
-                "rules": [
-                    {"when": "stock < 30", "then": "competitor_price"},
-                    {"when": "competitor_price > 0", "then": "competitor_price - 1"},
-                ],
-                "fallback": "cost_price * 4",
-            },
+            "kind": "formula",
+            "config": {"expression": "competitor_price - (stock >= 30) * 1"},
         },
     },
     {
