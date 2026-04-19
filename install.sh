@@ -255,8 +255,26 @@ setup_postgres() {
 
   local db_exists
   db_exists=$(as_user postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'")
+  if [[ "$db_exists" == "1" ]]; then
+    local db_encoding
+    db_encoding=$(as_user postgres psql -tAc "SELECT pg_encoding_to_char(encoding) FROM pg_database WHERE datname='$DB_NAME'")
+    if [[ "$db_encoding" != "UTF8" ]]; then
+      # Auf Debian wird der Cluster mit der Systemlocale initialisiert –
+      # bei POSIX/C landet man auf SQL_ASCII. Dann scheitert jeder INSERT
+      # mit Nicht-ASCII-Daten (Umlaute, JSONB) mit
+      # 'conversion between UTF8 and SQL_ASCII is not supported'.
+      # Die DB wird daher verworfen und mit UTF8 aus template0 neu gebaut.
+      warn "Datenbank '$DB_NAME' hat Encoding '$db_encoding', benötigt 'UTF8'. Wird neu angelegt."
+      as_user postgres dropdb "$DB_NAME"
+      db_exists=""
+    fi
+  fi
   if [[ "$db_exists" != "1" ]]; then
-    as_user postgres createdb -O "$DB_USER" "$DB_NAME"
+    # template0 kopieren statt template1, damit das Encoding frei wählbar ist,
+    # unabhängig davon, mit welchem Encoding der Cluster (und damit template1)
+    # initialisiert wurde.
+    as_user postgres createdb -O "$DB_USER" -E UTF8 -T template0 \
+      --lc-collate=C --lc-ctype=C "$DB_NAME"
   fi
 
   as_user postgres psql -d "$DB_NAME" -c 'CREATE EXTENSION IF NOT EXISTS "pgcrypto";' >/dev/null
