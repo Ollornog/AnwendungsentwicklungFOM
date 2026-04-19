@@ -1,0 +1,33 @@
+:root {
+  --pico-form-element-spacing-vertical: 0.5rem;
+}
+
+.badge-ai {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.error {
+  color: var(--pico-del-color, #b3261e);
+}
+
+.muted {
+  color: var(--pico-muted-color);
+}
+
+.row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+dialog article {
+  max-width: 32rem;
+}

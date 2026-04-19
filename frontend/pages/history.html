@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preishistorie – Preisoptimierung</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <nav class="container">
+    <ul><li><strong>Preisoptimierung</strong></li></ul>
+    <ul>
+      <li><a href="/pages/products.html">Produkte</a></li>
+      <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
+    </ul>
+  </nav>
+
+  <main class="container" x-data="historyPage()" x-init="load()">
+    <p><a :href="`/pages/product-detail.html?id=${productId}`">&larr; Zurück zum Produkt</a></p>
+    <h1>Preishistorie</h1>
+
+    <article x-data="historyTable(productId)" x-init="load()"
+             @price-confirmed.window="load()">
+      <p x-show="loading" aria-busy="true">Lade…</p>
+      <p x-show="!loading && items.length === 0" class="muted">Keine Einträge.</p>
+      <table x-show="items.length > 0">
+        <thead>
+          <tr>
+            <th>Zeitpunkt</th>
+            <th>Preis</th>
+            <th>Strategie</th>
+            <th>Markierung</th>
+            <th>Begründung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="item in items" :key="item.id">
+            <tr>
+              <td x-text="formatDate(item.created_at)"></td>
+              <td x-text="formatEur(item.price, item.currency)"></td>
+              <td x-text="item.strategy"></td>
+              <td>
+                <template x-if="item.is_llm_suggestion">
+                  <span class="badge-ai">KI-Vorschlag</span>
+                </template>
+              </td>
+              <td class="muted" x-text="item.reasoning || '—'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <small class="error" x-show="error" x-text="error"></small>
+    </article>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/store.js"></script>
+  <script src="/js/components/history-table.js"></script>
+  <script>
+    function historyPage() {
+      return {
+        productId: new URLSearchParams(location.search).get('id') || '',
+        formatEur(n, currency = 'EUR') {
+          return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(n);
+        },
+        load() { /* productId wird von historyTable gelesen */ },
+      };
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

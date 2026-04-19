@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – KI-gestützte Preisoptimierung</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <main class="container" x-data="loginForm()">
+    <article>
+      <hgroup>
+        <h1>KI-gestützte Preisoptimierung</h1>
+        <p class="muted">Admin-Login für Shop-Betreiber</p>
+      </hgroup>
+      <form @submit.prevent="submit">
+        <label>
+          Benutzername
+          <input type="text" x-model="username" required autocomplete="username">
+        </label>
+        <label>
+          Passwort
+          <input type="password" x-model="password" required autocomplete="current-password">
+        </label>
+        <button type="submit" :disabled="loading" :aria-busy="loading">Anmelden</button>
+        <small class="error" x-show="error" x-text="error"></small>
+      </form>
+    </article>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/store.js"></script>
+  <script>
+    function loginForm() {
+      return {
+        username: '', password: '', loading: false, error: '',
+        async submit() {
+          this.loading = true;
+          this.error = '';
+          try {
+            await this.$store.auth.login(this.username, this.password);
+            location.href = '/pages/products.html';
+          } catch (e) {
+            this.error = e.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+      };
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

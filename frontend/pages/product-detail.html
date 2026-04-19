@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produkt-Detail – Preisoptimierung</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <nav class="container">
+    <ul><li><strong>Preisoptimierung</strong></li></ul>
+    <ul>
+      <li><a href="/pages/products.html">Produkte</a></li>
+      <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
+    </ul>
+  </nav>
+
+  <main class="container" x-data="productDetail()" x-init="load()">
+    <p><a href="/pages/products.html">&larr; Zur Liste</a></p>
+
+    <template x-if="product">
+      <div>
+        <hgroup>
+          <h1 x-text="product.name"></h1>
+          <p class="muted" x-text="product.category"></p>
+        </hgroup>
+        <div class="row">
+          <span>Einkaufspreis: <strong x-text="formatEur(product.cost_price)"></strong></span>
+          <span>Lager: <strong x-text="product.stock"></strong></span>
+          <span x-show="product.competitor_price != null">
+            Wettbewerb: <strong x-text="formatEur(product.competitor_price)"></strong>
+          </span>
+        </div>
+
+        <article x-data="strategyPicker(product.id, product.strategy)">
+          <h2>Preisstrategie</h2>
+          <div class="row">
+            <template x-for="k in ['fix','formula','rule','llm']" :key="k">
+              <label class="row" style="gap:0.25rem">
+                <input type="radio" name="strategy" :value="k" :checked="kind === k" @change="setKind(k)">
+                <span x-text="labelFor(k)"></span>
+              </label>
+            </template>
+          </div>
+
+          <div x-show="kind === 'fix'">
+            <label>Fixpreis (EUR) <input type="number" step="0.01" x-model="config.amount"></label>
+          </div>
+          <div x-show="kind === 'formula'">
+            <label>Formel (Variablen: cost_price, stock, competitor_price)
+              <input type="text" x-model="config.expression">
+            </label>
+          </div>
+          <div x-show="kind === 'rule'">
+            <label>Regel-Fallback <input type="text" x-model="config.fallback"></label>
+            <small class="muted">Prototyp: Regel-Editor folgt, hier nur JSON-Struktur.</small>
+            <textarea rows="4" x-model="config.rules_json"
+                      x-init="config.rules_json = JSON.stringify(config.rules || [], null, 2)"
+                      @change="try { config.rules = JSON.parse(config.rules_json) } catch (_) {}"></textarea>
+          </div>
+          <div x-show="kind === 'llm'">
+            <label>Prompt-Vorlage
+              <textarea rows="4" x-model="config.prompt_template"></textarea>
+            </label>
+            <small class="muted">Nur Produkt-Whitelist-Felder werden an das LLM gesendet (siehe <code>docs/security.md</code>).</small>
+          </div>
+
+          <button @click="save" :disabled="loading" :aria-busy="loading">Strategie speichern</button>
+          <small class="error" x-show="error" x-text="error"></small>
+          <small x-show="saved" class="muted">Gespeichert.</small>
+
+          <label x-init="$watch('kind', k => setKind(k))" hidden></label>
+        </article>
+
+        <article x-data="priceDialog(product.id)">
+          <h2>Preis berechnen</h2>
+          <p class="muted">Berechnet einen Vorschlag. Persistiert wird erst nach Bestätigung (Human-in-the-Loop).</p>
+          <button @click="request" :disabled="loading" :aria-busy="loading">Preis berechnen</button>
+
+          <dialog :open="open">
+            <article>
+              <header>
+                <h3>Preisvorschlag</h3>
+              </header>
+              <p x-show="loading" aria-busy="true">Berechne…</p>
+              <template x-if="suggestion">
+                <div>
+                  <p>
+                    <strong x-text="formatEur(suggestion.price, suggestion.currency)"></strong>
+                    <template x-if="suggestion.is_llm_suggestion">
+                      <span class="badge-ai" title="Von einem KI-Modell vorgeschlagen">KI-Vorschlag</span>
+                    </template>
+                  </p>
+                  <p class="muted" x-text="'Strategie: ' + suggestion.strategy"></p>
+                  <p x-show="suggestion.reasoning" x-text="suggestion.reasoning"></p>
+                </div>
+              </template>
+              <small class="error" x-show="error" x-text="error"></small>
+              <footer>
+                <button class="secondary" @click="cancel" :disabled="confirming">Abbrechen</button>
+                <button @click="confirm" :disabled="!suggestion || confirming" :aria-busy="confirming">Bestätigen</button>
+              </footer>
+            </article>
+          </dialog>
+        </article>
+
+        <article>
+          <h2>Schnellzugriff</h2>
+          <a :href="`/pages/history.html?id=${product.id}`" role="button" class="outline">Preishistorie ansehen</a>
+        </article>
+      </div>
+    </template>
+
+    <p x-show="!product && !error" aria-busy="true">Lade…</p>
+    <p class="error" x-show="error" x-text="error"></p>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/store.js"></script>
+  <script src="/js/components/strategy-picker.js"></script>
+  <script src="/js/components/price-dialog.js"></script>
+  <script>
+    function productDetail() {
+      return {
+        product: null, error: '',
+        async load() {
+          const id = new URLSearchParams(location.search).get('id');
+          if (!id) { this.error = 'Keine Produkt-ID in der URL.'; return; }
+          try {
+            this.product = await window.api.get(`/products/${id}`);
+          } catch (e) { this.error = e.message; }
+        },
+        labelFor(k) {
+          return { fix: 'Fixpreis', formula: 'Formel', rule: 'Regel', llm: 'LLM-basiert' }[k];
+        },
+        formatEur(n, currency = 'EUR') {
+          return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(n);
+        },
+      };
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -21,13 +21,14 @@ Kurzformat: Akteur, Ziel, Ablauf. Ausnahmen nur, wenn relevant.
 
 ## UC-03 Preis berechnen
 - **Akteur:** Shop-Betreiber
-- **Ziel:** Aktuellen Preis laut aktiver Strategie ermitteln.
+- **Ziel:** Aktuellen Preis laut aktiver Strategie ermitteln und bestätigen.
 - **Ablauf:**
-  1. Betreiber löst "Preis berechnen" für ein Produkt aus.
-  2. Backend wertet die aktive Strategie aus; bei LLM-Strategie wird Google Gemini mit Whitelist-Feldern aufgerufen.
-  3. Ergebnis wird als **Vorschlag** angezeigt; bei LLM-Strategie mit Markierung "KI-Vorschlag" (Leitprinzip 4).
-  4. Betreiber bestätigt den Preis (Human-in-the-Loop, Leitprinzip 3).
-  5. Backend persistiert einen Eintrag in der Preishistorie.
+  1. Betreiber löst "Preis berechnen" für ein Produkt aus → `POST /products/{id}/price`.
+  2. Backend wertet die aktive Strategie aus; bei LLM-Strategie wird Google Gemini mit Whitelist-Feldern aufgerufen. Die Response enthält `is_llm_suggestion` und einen `suggestion_token`. Es entsteht **noch kein** Historien-Eintrag.
+  3. UI zeigt den Vorschlag in einem Bestätigungs-Dialog. Bei LLM-Strategie ist ein "KI-Vorschlag"-Badge sichtbar (Leitprinzip 4).
+  4. Betreiber bestätigt den Preis (Human-in-the-Loop, Leitprinzip 3) → `POST /products/{id}/price/confirm` mit dem Token.
+  5. Backend persistiert erst jetzt einen Eintrag in der Preishistorie.
+- **Abbruch:** Wenn der Betreiber ablehnt, wird kein Request gesendet; der Vorschlag läuft serverseitig mit dem Token ab.
 
 ## UC-04 Lagerbestand ändern
 - **Akteur:** Shop-Betreiber
