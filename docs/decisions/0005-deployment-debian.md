@@ -27,6 +27,7 @@ Für die Abschluss-Demo soll der Prototyp auf einem Debian-12-Server laufen. Gef
 - `.env` wird vom `install.sh` beim ersten Lauf erzeugt, `SESSION_SECRET` zufällig befüllt.
 - Wiederholte Läufe des Skripts aktualisieren Code und Migrationen, ohne Daten zu verwerfen.
 - Das Skript nutzt `runuser` (Teil von `util-linux`, immer vorhanden) statt `sudo` — läuft damit auch auf minimalen Debian-Images, auf denen `sudo` nicht installiert ist.
+- DNS wird über `systemd-resolved` persistent auf `1.1.1.1` und `8.8.8.8` festgenagelt (Drop-in `/etc/systemd/resolved.conf.d/preisopt-dns.conf`, `/etc/resolv.conf` als Symlink auf den Stub-Resolver). `systemd-resolved` ist enabled, die Einstellung gilt damit auch nach jedem Reboot.
 - Bei Bedarf kann das Team später auf Container / Compose umsteigen; bis dahin ist das Shell-Skript gut lesbar und ohne Zusatztooling.
 - **HTTP-only, bewusst.** Der Prototyp läuft dauerhaft ohne TLS (siehe `docs/security.md`). Kein `certbot`, kein HSTS, kein Redirect. Begründung: Demo-Umgebung, keine personenbezogenen Daten, keine Zahlungsabwicklung.
 

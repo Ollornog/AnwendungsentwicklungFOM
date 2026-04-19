@@ -131,6 +131,7 @@ install_packages() {
   #   libpq-dev, libffi-dev,  – Header für psycopg, argon2-cffi, cryptography,
   #   libssl-dev                falls kein Binärwheel verfügbar ist
   #   postgresql, -contrib    – Datenbank + Extensions (pgcrypto)
+  #   systemd-resolved        – DNS-Resolver, Config via configure_dns()
   #   nginx                   – Reverse-Proxy (optional via --no-nginx)
   local pkgs=(
     ca-certificates curl gnupg lsb-release
@@ -139,6 +140,7 @@ install_packages() {
     python3 python3-venv python3-dev
     libpq-dev libffi-dev libssl-dev
     postgresql postgresql-contrib
+    systemd-resolved
   )
   if $WITH_NGINX; then pkgs+=(nginx); fi
   apt-get install -y --no-install-recommends "${pkgs[@]}"
@@ -150,6 +152,45 @@ install_packages() {
     echo "C.UTF-8 UTF-8" >> /etc/locale.gen
     locale-gen >/dev/null
   fi
+}
+
+configure_dns() {
+  log "DNS: feste Resolver 1.1.1.1 und 8.8.8.8 konfigurieren (persistent)"
+
+  # Drop-in statt Haupt-Config, damit Paket-Updates die Einstellung nicht
+  # überschreiben. Gilt systemweit, greift beim Boot über systemd-resolved.
+  install -d -m 0755 /etc/systemd/resolved.conf.d
+  cat > /etc/systemd/resolved.conf.d/preisopt-dns.conf <<'EOF'
+# Gesetzt durch Preisopt install.sh. Nicht per Hand editieren;
+# wird bei erneutem install.sh-Lauf überschrieben.
+[Resolve]
+DNS=1.1.1.1 8.8.8.8
+FallbackDNS=
+DNSStubListener=yes
+EOF
+
+  systemctl enable systemd-resolved >/dev/null 2>&1 || true
+  systemctl restart systemd-resolved
+
+  # /etc/resolv.conf auf den Stub-Resolver zeigen lassen. DHCP-Clients
+  # schreiben dann nicht mehr hinein, weil es ein Symlink ist.
+  local stub=/run/systemd/resolve/stub-resolv.conf
+  if [[ "$(readlink -f /etc/resolv.conf 2>/dev/null)" != "$stub" ]]; then
+    if [[ -e /etc/resolv.conf && ! -L /etc/resolv.conf ]]; then
+      mv /etc/resolv.conf /etc/resolv.conf.preisopt-backup
+    fi
+    ln -sf "$stub" /etc/resolv.conf
+  fi
+
+  # Smoke-Test, damit Fehler früh sichtbar werden.
+  for _ in $(seq 1 10); do
+    if getent hosts deb.debian.org >/dev/null 2>&1; then
+      log "DNS: aktive Resolver: $(resolvectl dns 2>/dev/null | awk 'NR==1 {print $0}')"
+      return
+    fi
+    sleep 1
+  done
+  warn "DNS scheint nach Konfiguration nicht aufzulösen. Prüfen: resolvectl status"
 }
 
 wait_for_postgres() {
@@ -304,6 +345,7 @@ main() {
   require_internet
   prompt_secrets
   install_packages
+  configure_dns
   ensure_app_user
   deploy_code
   setup_postgres

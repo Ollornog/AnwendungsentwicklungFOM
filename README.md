@@ -14,16 +14,17 @@ Das Skript ist auf eine **frisch installierte Debian-12-Maschine** ausgelegt. Vo
 
 Das Skript ist idempotent und erledigt alles in einem Schritt:
 
-1. Pakete installieren (Python 3.11, PostgreSQL 16, nginx, `rsync`, Build-Tools, TLS-Roots, UTF-8-Locale, TZ-Daten)
-2. System-User `preisopt` anlegen, Code nach `/opt/preisopt/` spiegeln
-3. PostgreSQL-User und Datenbank `preisopt` einrichten, `pgcrypto` aktivieren
-4. `.env` mit zufällig generiertem `SESSION_SECRET` erzeugen
-5. Python-venv anlegen, `requirements.txt` installieren
-6. Alembic-Migrationen anwenden
-7. Seed: Admin-User + Mock-Produkte (Schuhe, T-Shirt, Kaffeebohnen)
-8. `systemd`-Service `preisopt-backend` starten
-9. `nginx` als Reverse-Proxy auf Port 80 einrichten
-10. Smoke-Test gegen den Health-Endpoint
+1. Pakete installieren (Python 3.11, PostgreSQL 16, nginx, `rsync`, Build-Tools, TLS-Roots, UTF-8-Locale, TZ-Daten, `systemd-resolved`)
+2. DNS persistent auf `1.1.1.1` und `8.8.8.8` setzen (via `systemd-resolved`, bleibt nach Reboot)
+3. System-User `preisopt` anlegen, Code nach `/opt/preisopt/` spiegeln
+4. PostgreSQL-User und Datenbank `preisopt` einrichten, `pgcrypto` aktivieren
+5. `.env` mit zufällig generiertem `SESSION_SECRET` erzeugen
+6. Python-venv anlegen, `requirements.txt` installieren
+7. Alembic-Migrationen anwenden
+8. Seed: Admin-User + Mock-Produkte (Schuhe, T-Shirt, Kaffeebohnen)
+9. `systemd`-Service `preisopt-backend` starten
+10. `nginx` als Reverse-Proxy auf Port 80 einrichten
+11. Smoke-Test gegen den Health-Endpoint
 
 Am Ende:
 
