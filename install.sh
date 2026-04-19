@@ -92,6 +92,35 @@ require_internet() {
   log "Internet: OK"
 }
 
+# Zieht Updates aus dem Git-Repo und fuehrt sich bei neuem Stand neu aus,
+# damit man zum Updaten einfach `./install.sh` im Clone erneut startet.
+# Uebersprungen, wenn:
+#   - schon einmal re-exec'd wurde (Guard via PREISOPT_SELF_UPDATED)
+#   - das Skript nicht aus einem Git-Clone laeuft (z. B. per curl | bash)
+#   - git fehlt, offline, lokale Modifikationen blockieren ff-only
+self_update() {
+  [[ -z "${PREISOPT_SELF_UPDATED:-}" ]] || return 0
+  [[ -d "$SCRIPT_DIR/.git" ]] || return 0
+  command -v git >/dev/null 2>&1 || return 0
+
+  log "Self-Update: git fetch && pull --ff-only im Clone $SCRIPT_DIR"
+  local before after
+  before=$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "")
+  if ! git -C "$SCRIPT_DIR" pull --ff-only --quiet 2>/tmp/preisopt-gitpull.log; then
+    warn "git pull fehlgeschlagen – fahre mit lokalem Stand fort. Details: /tmp/preisopt-gitpull.log"
+    return 0
+  fi
+  after=$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "")
+  if [[ "$before" == "$after" ]]; then
+    log "Self-Update: Skript ist bereits aktuell."
+    return 0
+  fi
+
+  log "Self-Update: neuer Stand ${before:0:7} → ${after:0:7}. Starte Skript neu."
+  export PREISOPT_SELF_UPDATED=1
+  exec "$0" "$@"
+}
+
 random_password() {
   # head schließt die Pipe nach 32 Bytes, tr erhält SIGPIPE. Mit
   # `set -o pipefail` würde das den gesamten Lauf stillschweigend abbrechen –
@@ -394,6 +423,9 @@ banner() {
 
 main() {
   banner
+  # Self-Update vor allem anderen – insbesondere vor prompt_secrets, damit
+  # der User das Passwort nicht zweimal eingeben muss.
+  self_update "$@"
   require_debian_12
   prompt_secrets
   require_internet
