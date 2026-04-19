@@ -104,6 +104,7 @@ SuggestTarget = Literal["fix", "formula"]
 class StrategySuggestRequest(BaseModel):
     target: SuggestTarget
     online: bool = False
+    fancy: bool = False  # Demo-Flag: KI darf ruhig eine ausfuehrlichere Formel liefern.
 
 
 class StrategySuggestResponse(BaseModel):
@@ -137,6 +138,11 @@ class AppSettingsUpdate(BaseModel):
     gemini_api_key: str | None = None
 
 
+class DatabaseResetResponse(BaseModel):
+    products_created: int
+    total_configured: int
+
+
 class HistoryItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -148,6 +154,7 @@ class HistoryItem(BaseModel):
     is_llm_suggestion: bool
     inputs: dict[str, Any]
     reasoning: str | None
+    username: str | None = None
 
 
 class HistoryOut(BaseModel):

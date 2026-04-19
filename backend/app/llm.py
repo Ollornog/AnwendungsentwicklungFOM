@@ -162,7 +162,12 @@ _ALLOWED_FORMULA_FUNCS = (
 )
 
 
-def _strategy_prompt(target: str, online: bool, whitelist: dict[str, Any]) -> str:
+def _strategy_prompt(
+    target: str,
+    online: bool,
+    whitelist: dict[str, Any],
+    fancy: bool = False,
+) -> str:
     context = (whitelist.get("context") or "").strip() or "—"
     competitor = whitelist.get("competitor_price")
     competitor_txt = competitor if competitor is not None else "—"
@@ -184,6 +189,12 @@ def _strategy_prompt(target: str, online: bool, whitelist: dict[str, Any]) -> st
             "Produkte in Deutschland und beziehe die Ergebnisse in deine "
             "Empfehlung ein.\n"
         )
+    if fancy:
+        base += (
+            "\nDemo-Kontext: das ist eine Vorfuehr-Umgebung. Ruhig ausfuehrlich "
+            "werden und mehrere Effekte kombinieren (Tageszeit, Wochentag, "
+            "Lagerstand als prozentuale Fuellung, Monatstag). Zeig, was geht.\n"
+        )
     if target == "fix":
         base += (
             '\nAntworte als JSON: {"price": <Zahl>, "reasoning": "<kurz, max 2 Saetze>"}. '
@@ -201,9 +212,12 @@ def _strategy_prompt(target: str, online: bool, whitelist: dict[str, Any]) -> st
             "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag "
             "oder `(weekday == 7) * 3` als Sonntagsaufschlag). "
             f"Erlaubte Funktionen: {funcs_list}. "
-            "Keine weiteren Funktionsaufrufe, keine Zuweisungen. Die Formel "
-            "darf vom Lagerbestand (stock), der Uhrzeit (hour), dem Tag im "
-            "Monat (day) und dem Wochentag (weekday) abhaengen.\n"
+            "Keine weiteren Funktionsaufrufe, keine Zuweisungen.\n"
+            "Wichtig: Wenn du auf den Lagerbestand reagierst, druecke das "
+            "moeglichst prozentual ueber `stock / start_stock` aus "
+            "(z. B. `(stock / start_stock < 0.2) * 3` als Niedrig-Lager-"
+            "Aufschlag), statt harter absoluter Schwellen. Das macht die "
+            "Formel unabhaengig von der konkreten Stueckzahl.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '
             '"<kurz, max 2 Saetze>"}. Kein Freitext drum herum.'
         )
@@ -233,16 +247,12 @@ def preview_strategy_prompt(
     target: str,
     online: bool,
     whitelist: dict[str, Any],
+    fancy: bool = False,
 ) -> str:
-    """Baut den gleichen Prompt wie `suggest_strategy`, ohne LLM-Call.
-
-    Fuer das Frontend: zeigt dem User genau, was an die KI geschickt
-    wuerde, bevor der eigentliche (potenziell teure/langsame)
-    Generate-Request laeuft.
-    """
+    """Baut den gleichen Prompt wie `suggest_strategy`, ohne LLM-Call."""
     if target not in ("fix", "formula"):
         raise LLMResponseError(f"Unbekanntes Ziel: {target}")
-    return _strategy_prompt(target, online, whitelist)
+    return _strategy_prompt(target, online, whitelist, fancy=fancy)
 
 
 def suggest_strategy(
@@ -250,10 +260,11 @@ def suggest_strategy(
     online: bool,
     whitelist: dict[str, Any],
     api_key: str | None = None,
+    fancy: bool = False,
 ) -> LLMStrategySuggestion:
     if target not in ("fix", "formula"):
         raise LLMResponseError(f"Unbekanntes Ziel: {target}")
-    prompt = _strategy_prompt(target, online, whitelist)
+    prompt = _strategy_prompt(target, online, whitelist, fancy=fancy)
     text = _generate(prompt, online=online, as_json=True, api_key=api_key)
     payload = _parse_json(text)
     reasoning = str(payload.get("reasoning", ""))[:500]

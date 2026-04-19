@@ -47,6 +47,7 @@ document.addEventListener('alpine:init', () => {
     expression: '',
     useAi: false,
     online: false,
+    fancy: false,
     aiLoading: false,
     aiPrompt: '',
     aiReasoning: '',
@@ -61,6 +62,7 @@ document.addEventListener('alpine:init', () => {
       this.aiReasoning = '';
       this.useAi = false;
       this.online = false;
+      this.fancy = false;
       const s = product.strategy;
       if (s && s.kind === 'fix') {
         this.target = 'fix';
@@ -107,7 +109,11 @@ document.addEventListener('alpine:init', () => {
       this.error = '';
       this.aiPrompt = '';
       this.aiReasoning = '';
-      const body = { target: this.target, online: !!this.online };
+      const body = {
+        target: this.target,
+        online: !!this.online,
+        fancy: !!this.fancy,
+      };
 
       // 1. Schritt: Preview-Prompt holen und sofort anzeigen, damit der
       //    User sieht, was die KI bekommt, bevor die eigentliche Antwort da ist.

@@ -137,10 +137,15 @@ prompt_secrets() {
   if [[ -z "$ADMIN_PASSWORD" ]]; then
     printf '\n'
     printf 'Der Admin-User wird fuer den Login in die Web-UI benutzt.\n'
-    printf 'Hinweis: Die Eingabe ist unsichtbar (keine Sternchen). Bestaetigen mit Enter.\n\n'
+    printf 'Hinweis: Die Eingabe ist unsichtbar (keine Sternchen). Bestaetigen mit Enter.\n'
+    printf 'Leer lassen und Enter druecken, um ein bereits gesetztes Passwort zu behalten.\n\n'
     while true; do
-      read -rsp "Passwort fuer Admin-User '${ADMIN_USERNAME}' (min. 6 Zeichen): " ADMIN_PASSWORD
+      read -rsp "Passwort fuer Admin-User '${ADMIN_USERNAME}' (min. 6 Zeichen, Enter = behalten): " ADMIN_PASSWORD
       printf '\n'
+      if [[ -z "$ADMIN_PASSWORD" ]]; then
+        log "Kein Passwort eingegeben – bestehendes Admin-Passwort wird nicht geaendert."
+        break
+      fi
       if [[ ${#ADMIN_PASSWORD} -lt 6 ]]; then
         warn "Passwort zu kurz. Bitte erneut eingeben."
         continue
@@ -359,8 +364,12 @@ run_seed() {
     return
   fi
   log "Seed: Admin-User und Mock-Produkte"
+  # ADMIN_PASSWORD kann leer sein – dann nicht ueberschreiben (seed.py
+  # erkennt einen bestehenden Admin-User und laesst das Passwort stehen).
+  local pw_arg
+  pw_arg=$(printf '%q' "$ADMIN_PASSWORD")
   as_user_shell "$APP_USER" \
-    "cd '$APP_DIR/backend' && set -a && source '$APP_DIR/.env' && set +a && '$APP_DIR/.venv/bin/python' -m seed --username '$ADMIN_USERNAME' --password '$ADMIN_PASSWORD'"
+    "cd '$APP_DIR/backend' && set -a && source '$APP_DIR/.env' && set +a && '$APP_DIR/.venv/bin/python' -m seed --username '$ADMIN_USERNAME' --password $pw_arg"
 }
 
 install_systemd() {
@@ -410,8 +419,19 @@ summary() {
   printf '  .env:        %s/.env\n' "$APP_DIR"
   printf '  Service:     systemctl status preisopt-backend\n'
   printf '  Logs:        journalctl -u preisopt-backend -f\n'
-  if [[ -z "$GEMINI_API_KEY" ]]; then
-    warn "GEMINI_API_KEY ist leer — LLM-Strategie schlägt fehl, bis er in $APP_DIR/.env gesetzt ist."
+
+  # GEMINI-Key-Check beruecksichtigt .env UND app_settings.gemini_api_key,
+  # weil der Admin den Key auch per UI (Seite "Einstellungen") setzen kann.
+  local db_has_key=""
+  db_has_key=$(
+    as_user postgres psql -tAd "$DB_NAME" \
+      -c "SELECT 1 FROM app_settings WHERE key = 'gemini_api_key' AND value <> '' LIMIT 1" \
+      2>/dev/null | tr -d '[:space:]'
+  )
+  if [[ -z "$GEMINI_API_KEY" && "$db_has_key" != "1" ]]; then
+    warn "GEMINI_API_KEY weder in .env noch in der DB gesetzt — LLM-Features schlagen fehl, bis er in $APP_DIR/.env oder per UI (Einstellungen) gesetzt ist."
+  elif [[ -z "$GEMINI_API_KEY" ]]; then
+    log "GEMINI_API_KEY aus der DB aktiv (via UI gesetzt)."
   fi
 }
 

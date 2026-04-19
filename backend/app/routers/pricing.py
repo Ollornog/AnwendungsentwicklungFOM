@@ -95,6 +95,7 @@ def confirm_price(
 
     entry = PriceHistory(
         product_id=product.id,
+        user_id=user.id,
         strategy=suggestion.strategy,
         price=suggestion.price,
         currency=suggestion.currency,
@@ -121,4 +122,11 @@ def get_history(
         .where(PriceHistory.product_id == product.id)
         .order_by(PriceHistory.created_at.desc())
     ).all()
-    return HistoryOut(items=[HistoryItem.model_validate(r) for r in rows])
+    items = []
+    for r in rows:
+        item = HistoryItem.model_validate(r)
+        # joined-load via relationship; kann None sein, wenn der User
+        # zwischenzeitlich geloescht wurde.
+        item.username = r.user.username if r.user is not None else None
+        items.append(item)
+    return HistoryOut(items=items)

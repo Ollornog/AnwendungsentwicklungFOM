@@ -116,6 +116,17 @@ table.compact .actions a {
 .token-bar .token-cmp  { border-color: var(--pico-muted-color); color: var(--pico-muted-color); }
 .token-bar .token-fn   { border-color: #7a5af5; color: #7a5af5; }
 
+/* Brand-Logo in der Navigation */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: inherit;
+  text-decoration: none;
+}
+.brand:hover { color: inherit; text-decoration: none; }
+.brand img { width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
+
 .modal-backdrop textarea[readonly] {
   background: var(--pico-card-sectionning-background-color, #f8f8f8);
   white-space: pre-wrap;

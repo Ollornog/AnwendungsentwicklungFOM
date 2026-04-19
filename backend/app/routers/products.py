@@ -147,7 +147,9 @@ def preview_prompt_endpoint(
     product = _get_owned_product(db, user, product_id)
     whitelist = _strategy_whitelist(product)
     try:
-        prompt = preview_strategy_prompt(payload.target, payload.online, whitelist)
+        prompt = preview_strategy_prompt(
+            payload.target, payload.online, whitelist, fancy=payload.fancy
+        )
     except LLMResponseError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     return StrategyPromptPreview(target=payload.target, online=payload.online, prompt=prompt)
@@ -164,7 +166,13 @@ def suggest_strategy_endpoint(
     whitelist = _strategy_whitelist(product)
     api_key = app_settings_svc.gemini_api_key(db)
     try:
-        result = suggest_strategy(payload.target, payload.online, whitelist, api_key=api_key)
+        result = suggest_strategy(
+            payload.target,
+            payload.online,
+            whitelist,
+            api_key=api_key,
+            fancy=payload.fancy,
+        )
     except LLMUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMResponseError as exc:

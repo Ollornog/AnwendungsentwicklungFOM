@@ -4,15 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Produkte – Preisoptimierung</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
   <nav class="container">
-    <ul><li><strong>Preisoptimierung</strong></li></ul>
+    <ul><li>
+      <a href="/pages/products.html" class="brand">
+        <img src="/favicon.svg" alt="">
+        <strong>Preisoptimierung</strong>
+      </a>
+    </li></ul>
     <ul>
       <li><a href="/pages/products.html">Produkte</a></li>
-      <li><a href="#" @click.prevent="window.dispatchEvent(new CustomEvent('open-create-modal'))">Produkt hinzufügen</a></li>
+      <li><a href="#" @click.prevent="window.dispatchEvent(new CustomEvent('open-product-form'))">Produkt hinzufügen</a></li>
       <li><a href="/pages/settings.html">Einstellungen</a></li>
       <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
     </ul>
@@ -44,6 +50,7 @@
 
     <!-- Produkt-Liste -->
     <div @product-created.window="onProductCreated($event.detail)"
+         @product-updated.window="onProductUpdated($event.detail)"
          @strategy-saved.window="onStrategySaved($event.detail)">
       <p x-show="loading" aria-busy="true">Lade…</p>
       <p x-show="!loading && products.length === 0" class="muted">
@@ -84,9 +91,7 @@
                 <td class="price" x-text="formatPrice(priceFor(p))"></td>
                 <td class="actions">
                   <button class="outline" @click="openStrategyModal(p)" title="Preis-Strategie festlegen">Strategie</button>
-                  <button class="secondary outline" @click="computeAndConfirm(p)"
-                          :title="savedAt === p.id ? 'In Historie gespeichert' : 'Aktuellen Preis in die Historie schreiben'"
-                          x-text="savedAt === p.id ? '✓ gespeichert' : 'speichern'"></button>
+                  <button class="secondary outline" @click="editProduct(p)" title="Produktdaten bearbeiten">Bearbeiten</button>
                   <a :href="`/pages/history.html?id=${p.id}`" role="button" class="secondary outline" title="Preishistorie">Historie</a>
                 </td>
               </tr>
@@ -97,14 +102,16 @@
       <small class="error" x-show="error" x-text="error"></small>
     </div>
 
-    <!-- Anlegen-Modal -->
-    <div x-data="productCreateModal()"
-         @open-create-modal.window="show()"
+    <!-- Anlegen-/Bearbeiten-Modal -->
+    <div x-data="productFormModal()"
+         @open-product-form.window="show($event.detail)"
          x-show="open"
          x-cloak
          class="modal-backdrop">
       <article>
-        <header><strong>Produkt anlegen</strong></header>
+        <header>
+          <strong x-text="mode === 'edit' ? 'Produkt bearbeiten' : 'Produkt anlegen'"></strong>
+        </header>
         <form @submit.prevent="submit">
           <div class="grid">
             <label>Name <input type="text" x-model="name" required></label>
@@ -136,7 +143,8 @@
           <small class="error" x-show="error" x-text="error"></small>
           <footer>
             <button type="button" class="secondary" @click="cancel()">Abbrechen</button>
-            <button type="submit" :disabled="loading" :aria-busy="loading">Anlegen</button>
+            <button type="submit" :disabled="loading" :aria-busy="loading"
+                    x-text="mode === 'edit' ? 'Speichern' : 'Anlegen'"></button>
           </footer>
         </form>
       </article>
@@ -190,6 +198,9 @@
           <label x-show="useAi" style="margin-left:1.5rem">
             <input type="checkbox" x-model="online"> Online recherchieren
           </label>
+          <label x-show="useAi" style="margin-left:1.5rem">
+            <input type="checkbox" x-model="fancy"> Ausführlich (komplexere Formel)
+          </label>
           <div x-show="useAi">
             <button type="button" class="secondary"
                     @click="askAi()" :disabled="aiLoading" :aria-busy="aiLoading">KI fragen</button>
@@ -219,7 +230,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/store.js"></script>
   <script src="/js/formula-eval.js"></script>
-  <script src="/js/components/product-create-modal.js"></script>
+  <script src="/js/components/product-form-modal.js"></script>
   <script src="/js/components/price-strategy-modal.js"></script>
   <script>
     function productsApp() {
@@ -229,7 +240,6 @@
         error: '',
         sim: { hour: 12, day: 15 },
         paused: false,
-        savedAt: null, // Produkt-ID, fuer die der "gespeichert"-Badge kurz gezeigt wird
         _tickHandle: null,
 
         async load() {
@@ -246,7 +256,7 @@
             // '?create=1' triggert das Modal nach dem Laden.
             if (new URLSearchParams(location.search).get('create') === '1') {
               setTimeout(
-                () => window.dispatchEvent(new CustomEvent('open-create-modal')),
+                () => window.dispatchEvent(new CustomEvent('open-product-form')),
                 50,
               );
               history.replaceState({}, '', location.pathname);
@@ -282,9 +292,25 @@
           this.products.unshift(p);
         },
 
+        onProductUpdated(updated) {
+          const idx = this.products.findIndex((x) => x.id === updated.id);
+          if (idx < 0) return;
+          // Runtime-State (aktueller Lagerbestand, Verbrauch im Tick) nicht
+          // ueberschreiben – nur statische Felder aus der Server-Antwort.
+          const runtime = {
+            _current_stock: this.products[idx]._current_stock,
+            _usage: this.products[idx]._usage,
+          };
+          this.products[idx] = Object.assign({}, updated, runtime);
+        },
+
         onStrategySaved(detail) {
           const p = this.products.find((x) => x.id === detail.productId);
           if (p) p.strategy = detail.strategy;
+        },
+
+        editProduct(p) {
+          window.dispatchEvent(new CustomEvent('open-product-form', { detail: p }));
         },
 
         varsFor(p) {
@@ -334,30 +360,6 @@
 
         openStrategyModal(p) {
           window.dispatchEvent(new CustomEvent('open-strategy-modal', { detail: p }));
-        },
-
-        async computeAndConfirm(p) {
-          if (!p.strategy) {
-            this.error = 'Keine Strategie konfiguriert – erst „Strategie" nutzen.';
-            return;
-          }
-          this.error = '';
-          try {
-            const body = {
-              hour: Number(this.sim.hour),
-              day: Number(this.sim.day),
-              current_stock: Number(p._current_stock),
-              usage: Number(p._usage),
-            };
-            const sugg = await window.api.post(`/products/${p.id}/price`, body);
-            await window.api.post(`/products/${p.id}/price/confirm`, {
-              suggestion_token: sugg.suggestion_token,
-            });
-            this.savedAt = p.id;
-            setTimeout(() => { if (this.savedAt === p.id) this.savedAt = null; }, 1800);
-          } catch (e) {
-            this.error = e.message;
-          }
         },
 
         formatEur(n) {

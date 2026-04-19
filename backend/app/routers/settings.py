@@ -1,14 +1,16 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
 from app.deps import get_current_user
+from app.mock_data import MOCK_PRODUCTS
 from app.models import User
-from app.schemas import AppSettingsOut, AppSettingsUpdate
+from app.schemas import AppSettingsOut, AppSettingsUpdate, DatabaseResetResponse
 from app.services import app_settings as svc
+from app.services import seeding
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -49,3 +51,28 @@ def update_settings(
         else:
             svc.set_value(db, svc.GEMINI_API_KEY, payload.gemini_api_key.strip())
     return _build_view(db)
+
+
+@router.post(
+    "/reset-database",
+    response_model=DatabaseResetResponse,
+    status_code=status.HTTP_200_OK,
+)
+def reset_database_endpoint(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> DatabaseResetResponse:
+    """Setzt die Daten auf den Seed-Stand zurueck.
+
+    Loescht alle Produkte (damit per CASCADE auch Strategien, History und
+    Suggestions), leert `app_settings` und legt die Mock-Produkte neu an.
+    Der Admin-User bleibt erhalten.
+    """
+    seeding.reset_database(db, user.id)
+    result = seeding.ensure_admin_and_mock_products(
+        db, username=user.username, password="", mock_products=MOCK_PRODUCTS
+    )
+    return DatabaseResetResponse(
+        products_created=result.products_added,
+        total_configured=len(MOCK_PRODUCTS),
+    )

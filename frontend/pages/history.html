@@ -4,12 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Preishistorie – Preisoptimierung</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
   <nav class="container">
-    <ul><li><strong>Preisoptimierung</strong></li></ul>
+    <ul><li>
+      <a href="/pages/products.html" class="brand">
+        <img src="/favicon.svg" alt="">
+        <strong>Preisoptimierung</strong>
+      </a>
+    </li></ul>
     <ul>
       <li><a href="/pages/products.html">Produkte</a></li>
       <li><a href="/pages/products.html?create=1">Produkt hinzufügen</a></li>
@@ -26,12 +32,13 @@
              @price-confirmed.window="load()">
       <p x-show="loading" aria-busy="true">Lade…</p>
       <p x-show="!loading && items.length === 0" class="muted">Keine Einträge.</p>
-      <table x-show="items.length > 0">
+      <table x-show="items.length > 0" class="compact">
         <thead>
           <tr>
             <th>Zeitpunkt</th>
             <th>Preis</th>
             <th>Strategie</th>
+            <th>Benutzer</th>
             <th>Markierung</th>
             <th>Begründung</th>
           </tr>
@@ -42,6 +49,7 @@
               <td x-text="formatDate(item.created_at)"></td>
               <td x-text="formatEur(item.price, item.currency)"></td>
               <td x-text="item.strategy"></td>
+              <td x-text="item.username || '—'"></td>
               <td>
                 <template x-if="item.is_llm_suggestion">
                   <span class="badge-ai">KI-Vorschlag</span>

@@ -4,12 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Einstellungen – Preisoptimierung</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
   <nav class="container">
-    <ul><li><strong>Preisoptimierung</strong></li></ul>
+    <ul><li>
+      <a href="/pages/products.html" class="brand">
+        <img src="/favicon.svg" alt="">
+        <strong>Preisoptimierung</strong>
+      </a>
+    </li></ul>
     <ul>
       <li><a href="/pages/products.html">Produkte</a></li>
       <li><a href="/pages/products.html?create=1">Produkt hinzufügen</a></li>
@@ -70,6 +76,22 @@
         <li>Quelle: Google AI Studio &rarr; <em>Get API key</em>.</li>
       </ul>
     </article>
+
+    <article>
+      <header><strong>Datenbank zurücksetzen</strong></header>
+      <p class="muted">
+        Setzt alle Produkte, Strategien, Preishistorie und Einstellungen
+        zurück auf den Seed-Stand. Der Admin-Account bleibt erhalten.
+        <strong>Vorsicht: die Aktion kann nicht rückgängig gemacht werden.</strong>
+      </p>
+      <small class="error" x-show="resetError" x-text="resetError"></small>
+      <small x-show="resetMessage" style="color:green" x-text="resetMessage"></small>
+      <footer>
+        <button type="button" class="secondary outline"
+                @click="resetDatabase()" :disabled="resetting"
+                :aria-busy="resetting">Auf Seed-Daten zurücksetzen</button>
+      </footer>
+    </article>
   </main>
 
   <script src="/js/api.js"></script>
@@ -83,6 +105,9 @@
         error: '',
         apiKey: '',
         status: { gemini_api_key_set: false, gemini_api_key_source: 'none' },
+        resetting: false,
+        resetError: '',
+        resetMessage: '',
 
         async load() {
           this.loading = true;
@@ -128,6 +153,29 @@
             this.error = e.message;
           } finally {
             this.saving = false;
+          }
+        },
+
+        async resetDatabase() {
+          if (!confirm(
+            'Wirklich alles auf Seed-Daten zurücksetzen?\n\n' +
+            'Produkte, Strategien, Preishistorie und API-Key-Override werden gelöscht.\n' +
+            'Der Admin-Account bleibt erhalten.'
+          )) return;
+          this.resetting = true;
+          this.resetError = '';
+          this.resetMessage = '';
+          try {
+            const res = await window.api.post('/settings/reset-database', {});
+            this.resetMessage =
+              `Zurückgesetzt. ${res.products_created} von ${res.total_configured} Mock-Produkten neu angelegt.`;
+            // API-Key-Status erneut laden, der Override ist weg.
+            this.status = await window.api.get('/settings');
+            setTimeout(() => { this.resetMessage = ''; }, 6000);
+          } catch (e) {
+            this.resetError = e.message;
+          } finally {
+            this.resetting = false;
           }
         },
       };
