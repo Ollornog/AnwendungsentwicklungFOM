@@ -7,7 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_current_user
-from app.llm import LLMResponseError, LLMUnavailableError, suggest_strategy
+from app.llm import (
+    LLMResponseError,
+    LLMUnavailableError,
+    preview_strategy_prompt,
+    suggest_strategy,
+)
 from app.models import PricingStrategy, Product, User
 from app.services import app_settings as app_settings_svc
 from app.schemas import (
@@ -16,6 +21,7 @@ from app.schemas import (
     ProductOut,
     ProductUpdate,
     StrategyOut,
+    StrategyPromptPreview,
     StrategySuggestRequest,
     StrategySuggestResponse,
     StrategyUpsert,
@@ -123,6 +129,28 @@ def upsert_strategy(
     db.commit()
     db.refresh(product.strategy)
     return product.strategy
+
+
+@router.post("/{product_id}/strategy/prompt-preview", response_model=StrategyPromptPreview)
+def preview_prompt_endpoint(
+    product_id: uuid.UUID,
+    payload: StrategySuggestRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> StrategyPromptPreview:
+    """Gibt nur den Prompt zurueck, ohne das LLM aufzurufen.
+
+    Wird vom Modal genutzt, um die Frage an die KI sichtbar zu machen,
+    sobald der User "KI fragen" klickt – noch bevor die eigentliche
+    (langsame) Antwort da ist.
+    """
+    product = _get_owned_product(db, user, product_id)
+    whitelist = _strategy_whitelist(product)
+    try:
+        prompt = preview_strategy_prompt(payload.target, payload.online, whitelist)
+    except LLMResponseError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    return StrategyPromptPreview(target=payload.target, online=payload.online, prompt=prompt)
 
 
 @router.post("/{product_id}/strategy/suggest", response_model=StrategySuggestResponse)

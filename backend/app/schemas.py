@@ -114,6 +114,12 @@ class StrategySuggestResponse(BaseModel):
     prompt: str  # Transparenz: der tatsaechlich an die KI geschickte Text.
 
 
+class StrategyPromptPreview(BaseModel):
+    target: SuggestTarget
+    online: bool
+    prompt: str
+
+
 class AppSettingsOut(BaseModel):
     """Read-only Sicht auf Laufzeit-Einstellungen.
 

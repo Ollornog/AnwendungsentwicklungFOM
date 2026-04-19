@@ -182,9 +182,12 @@ def _strategy_prompt(target: str, online: bool, whitelist: dict[str, Any]) -> st
         base += (
             "\nSchlage eine Preisformel vor. Erlaubte Variablen: "
             f"{vars_list}. "
-            "Erlaubte Operatoren: + - * / ** % ( ). Keine Funktionsaufrufe, "
-            "keine Vergleiche. Die Formel darf vom Lagerbestand (stock), "
-            "der Uhrzeit (hour) und dem Tag im Monat (day) abhaengen.\n"
+            "Erlaubte Operatoren: + - * / ** % ( ) sowie die Vergleiche "
+            "< <= > >= == != (ein Vergleich ergibt 1 oder 0 und kann "
+            "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag). "
+            "Keine Funktionsaufrufe, keine Zuweisungen. Die Formel darf "
+            "vom Lagerbestand (stock), der Uhrzeit (hour) und dem Tag im "
+            "Monat (day) abhaengen.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '
             '"<kurz, max 2 Saetze>"}. Kein Freitext drum herum.'
         )
@@ -207,6 +210,22 @@ def _validate_expression(expression: str) -> None:
     stripped = re.sub(r"==|!=|<=|>=", "", expression)
     if "=" in stripped:
         raise LLMResponseError("Formel darf keine Zuweisung enthalten")
+
+
+def preview_strategy_prompt(
+    target: str,
+    online: bool,
+    whitelist: dict[str, Any],
+) -> str:
+    """Baut den gleichen Prompt wie `suggest_strategy`, ohne LLM-Call.
+
+    Fuer das Frontend: zeigt dem User genau, was an die KI geschickt
+    wuerde, bevor der eigentliche (potenziell teure/langsame)
+    Generate-Request laeuft.
+    """
+    if target not in ("fix", "formula"):
+        raise LLMResponseError(f"Unbekanntes Ziel: {target}")
+    return _strategy_prompt(target, online, whitelist)
 
 
 def suggest_strategy(

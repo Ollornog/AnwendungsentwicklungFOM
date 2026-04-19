@@ -97,10 +97,26 @@ document.addEventListener('alpine:init', () => {
       this.error = '';
       this.aiPrompt = '';
       this.aiReasoning = '';
+      const body = { target: this.target, online: !!this.online };
+
+      // 1. Schritt: Preview-Prompt holen und sofort anzeigen, damit der
+      //    User sieht, was die KI bekommt, bevor die eigentliche Antwort da ist.
+      try {
+        const preview = await window.api.post(
+          `/products/${this.product.id}/strategy/prompt-preview`,
+          body,
+        );
+        this.aiPrompt = preview.prompt || '';
+      } catch (e) {
+        // Preview-Fehler blockiert die echte Abfrage nicht.
+        console.warn('Prompt-Preview fehlgeschlagen:', e);
+      }
+
+      // 2. Schritt: eigentliche LLM-Antwort.
       try {
         const res = await window.api.post(
           `/products/${this.product.id}/strategy/suggest`,
-          { target: this.target, online: !!this.online },
+          body,
         );
         if (res.target === 'fix' && res.amount != null) {
           this.amount = res.amount;
@@ -108,7 +124,9 @@ document.addEventListener('alpine:init', () => {
           this.expression = res.expression;
         }
         this.aiReasoning = res.reasoning || '';
-        this.aiPrompt = res.prompt || '';
+        // Der Prompt aus der Suggest-Response ist autoritativ (falls der
+        // Server den Prompt in der Zwischenzeit leicht angepasst hat).
+        if (res.prompt) this.aiPrompt = res.prompt;
       } catch (e) {
         this.error = e.message;
       } finally {

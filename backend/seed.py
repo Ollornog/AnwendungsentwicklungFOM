@@ -193,21 +193,32 @@ def seed(username: str, password: str) -> None:
         else:
             print(f"User '{username}' existiert bereits.")
 
-        existing = db.scalar(select(Product).where(Product.owner_id == user.id))
-        if existing is not None:
-            print("Produkte existieren bereits, überspringe Mock-Daten.")
-            db.commit()
-            return
-
+        # Idempotent pro Produktname: fehlende Mock-Eintraege werden auch bei
+        # bestehender DB nachgezogen. Das ist wichtig, weil install.sh das
+        # Seed-Skript bei jedem Lauf aufruft; ein fruehes 'return' wuerde
+        # sonst neue Mock-Produkte dauerhaft aussperren.
+        existing_names = set(
+            db.scalars(
+                select(Product.name).where(Product.owner_id == user.id)
+            ).all()
+        )
+        added = 0
         for data in MOCK_PRODUCTS:
-            strategy_spec = data.pop("strategy")
-            product = Product(owner_id=user.id, **data)
+            if data["name"] in existing_names:
+                continue
+            strategy_spec = data["strategy"]
+            fields = {k: v for k, v in data.items() if k != "strategy"}
+            product = Product(owner_id=user.id, **fields)
             product.strategy = PricingStrategy(
                 kind=strategy_spec["kind"], config=strategy_spec["config"]
             )
             db.add(product)
+            added += 1
         db.commit()
-        print(f"{len(MOCK_PRODUCTS)} Mock-Produkte angelegt.")
+        if added == 0:
+            print("Alle Mock-Produkte existieren bereits, nichts zu tun.")
+        else:
+            print(f"{added} Mock-Produkt(e) angelegt (insg. konfiguriert: {len(MOCK_PRODUCTS)}).")
 
 
 def main() -> int:
