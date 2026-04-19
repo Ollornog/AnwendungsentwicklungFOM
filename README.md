@@ -8,7 +8,7 @@ Studentisches Semesterprojekt der FOM Hochschule, Modul Anwendungsentwicklung.
 # als root eingeloggt (oder mit sudo vorweg):
 apt-get update && apt-get install -y git
 git clone https://github.com/Ollornog/AnwendungsentwicklungFOM
-cd AnwendungsentwicklungFOM
+cd ~/AnwendungsentwicklungFOM
 ./install.sh
 ```
 
