@@ -146,4 +146,5 @@ def suggest_strategy_endpoint(
         amount=result.amount,
         expression=result.expression,
         reasoning=result.reasoning,
+        prompt=result.prompt,
     )

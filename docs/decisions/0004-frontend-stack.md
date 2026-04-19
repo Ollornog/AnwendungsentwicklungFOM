@@ -24,7 +24,7 @@ CLAUDE.md sah "HTML/JS (vanilla, später ggf. leichtes Framework)" vor. Für die
 ## Konsequenzen
 - Verzeichnis `frontend/` im Repo, strukturiert nach Seiten und Komponenten.
 - Alle API-Calls laufen über `frontend/js/api.js` (einheitliche Fehlerbehandlung, Auth-Redirect).
-- Leitprinzip 4 (KI-Sichtbarkeit): Backend-Responses müssen `is_llm_suggestion: bool` liefern, Frontend rendert ein Badge in `price-dialog.js` und `history-table.js`.
+- Leitprinzip 4 (KI-Sichtbarkeit): Backend-Responses müssen `is_llm_suggestion: bool` liefern; Frontend rendert ein `badge-ai` (CSS-Klasse) an den KI-beruehrten Stellen (Strategie-Modal, History).
 - Leitprinzip 3 (Human-in-the-Loop): Preisberechnung und Bestätigung sind zwei getrennte Requests (`POST /products/{id}/price` → `POST /products/{id}/price/confirm`), nur der zweite persistiert.
 
 ## Alternativen

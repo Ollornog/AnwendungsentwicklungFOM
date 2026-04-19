@@ -111,6 +111,7 @@ class StrategySuggestResponse(BaseModel):
     amount: Decimal | None = None
     expression: str | None = None
     reasoning: str
+    prompt: str  # Transparenz: der tatsaechlich an die KI geschickte Text.
 
 
 class AppSettingsOut(BaseModel):

@@ -114,3 +114,26 @@ table.compact .actions a {
   margin: 0;
 }
 .modal-backdrop fieldset { margin-bottom: 0.6rem; }
+
+/* Token-Leiste im Formel-Modal (Variablen + Operatoren einfuegen) */
+.token-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.3rem 0 0.5rem;
+}
+.token-bar button {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  margin: 0;
+  font-family: ui-monospace, Menlo, monospace;
+  min-width: auto;
+}
+.token-bar .token-var  { border-color: var(--pico-primary); color: var(--pico-primary); }
+.token-bar .token-op   { border-color: var(--pico-muted-border-color); }
+.token-bar .token-cmp  { border-color: var(--pico-muted-color); color: var(--pico-muted-color); }
+
+.modal-backdrop textarea[readonly] {
+  background: var(--pico-card-sectionning-background-color, #f8f8f8);
+  white-space: pre-wrap;
+}

@@ -36,6 +36,7 @@ class LLMStrategySuggestion:
     amount: Decimal | None
     expression: str | None
     reasoning: str
+    prompt: str  # der tatsaechlich an die KI geschickte Prompt (Transparenz)
 
 
 _RESPONSE_SCHEMA_HINT = (
@@ -232,7 +233,7 @@ def suggest_strategy(
         if price < 0:
             raise LLMResponseError("LLM schlug negativen Preis vor")
         return LLMStrategySuggestion(
-            target="fix", amount=price, expression=None, reasoning=reasoning
+            target="fix", amount=price, expression=None, reasoning=reasoning, prompt=prompt
         )
 
     expression = payload.get("expression")
@@ -241,5 +242,5 @@ def suggest_strategy(
     expression = expression.strip()
     _validate_expression(expression)
     return LLMStrategySuggestion(
-        target="formula", amount=None, expression=expression, reasoning=reasoning
+        target="formula", amount=None, expression=expression, reasoning=reasoning, prompt=prompt
     )

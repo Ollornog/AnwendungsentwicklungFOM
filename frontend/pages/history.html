@@ -18,7 +18,7 @@
   </nav>
 
   <main class="container" x-data="historyPage()" x-init="load()">
-    <p><a :href="`/pages/product-detail.html?id=${productId}`">&larr; Zurück zum Produkt</a></p>
+    <p><a href="/pages/products.html">&larr; Zur Liste</a></p>
     <h1>Preishistorie</h1>
 
     <article x-data="historyTable(productId)" x-init="load()"
