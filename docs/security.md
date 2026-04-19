@@ -1,26 +1,20 @@
-# Sicherheit & Datenschutz
+# Informationssicherheit
 
-## Secrets
-- Alle Secrets (DB-Credentials, LLM-API-Keys, Session-Secret) liegen in `.env` und werden über Umgebungsvariablen geladen.
-- `.env` ist in `.gitignore`. Eine `.env.example` ohne Werte dient als Vorlage.
-- Keys werden niemals geloggt.
+Wir orientieren uns an **Art. 32 DSGVO (Technische und organisatorische Maßnahmen)** und setzen im Prototyp die wesentlichen Punkte um. Die Tabelle zeigt, was im Produktivbetrieb zusätzlich zu erwarten wäre.
 
-## LLM-Datennutzung
-- An den externen LLM-Service werden ausschließlich produktbezogene Whitelist-Felder gesendet (z. B. Titel, Kategorie, Einkaufspreis, Wettbewerbspreis).
-- **Niemals** an das LLM gesendet: Kundendaten, Bestelldaten, personenbezogene Daten von Käufern, interne IDs, Auth-Tokens.
-- Begründung: DSGVO-Datenminimierung; Vermeidung der Übertragung personenbezogener Daten an Drittanbieter außerhalb des nötigen Zwecks.
-- Die Whitelist ist im Backend hart konfiguriert und wird per Code-Review gepflegt.
+| Thema | Prototyp | Produktiv-Ausblick |
+| --- | --- | --- |
+| Authentifizierung | Login für Admin-UI, Passwörter mit bcrypt/argon2 gehasht | MFA, Passwort-Policy, Brute-Force-Schutz |
+| Transportverschlüsselung | Lokal HTTP | HTTPS-only, HSTS, aktuelle TLS-Version |
+| Input-Validierung | Pydantic-Schemas im FastAPI-Backend | + Rate-Limiting, WAF, strukturelle Output-Validierung |
+| Secrets-Management | `.env` + `.gitignore`, `.env.example` als Vorlage | Secrets-Manager (z. B. Vault, AWS SM), Rotation |
+| Audit-Log | Preishistorie als append-only Tabelle | Zentrales, manipulationssicheres Log, Retention-Policy |
+| Backup | Manueller DB-Dump (z. B. `pg_dump`) | Automatisiert, verschlüsselt, Restore regelmäßig getestet |
+| Rollen/Berechtigungen | Admin + Read-only | Feingranulares RBAC, Review-Prozess |
+| Privacy by Design | Umgesetzt durch Leitprinzipien 1, 2, 5 | Datenschutz-Folgenabschätzung, AVV, Löschkonzept |
+| LLM-Datenminimierung | Whitelist-Felder aus Produktdaten, keine Kundendaten | AVV mit Anbieter, EU-Hosting, Opt-out für Trainingsnutzung |
 
-## Authentifizierung & Autorisierung
-- Verfahren: TBD (Session-Cookie oder JWT). Entscheidung folgt in einem ADR.
-- Passwörter werden gehasht gespeichert (z. B. argon2 oder bcrypt).
-
-## Transport
-- Im Betrieb HTTPS-only; lokal Entwicklung über HTTP zulässig.
-
-## Logging
-- Anwendungsdaten ja, sensible Daten (Passwörter, API-Keys, vollständige LLM-Requests mit Klartext-Geheimnissen) nein.
-
-## Offene Punkte
-- Konkrete DSGVO-Bewertung dokumentieren (Verantwortlicher, Zwecke, Speicherfristen).
-- Backup- und Lösch-Konzept der Datenbank.
+## Zusätzliche Praxis im Prototyp
+- Keys und Credentials werden nicht geloggt.
+- Fehlermeldungen geben keine internen Details nach außen.
+- Jede Preisberechnung erzeugt genau einen Historien-Eintrag (Nachvollziehbarkeit).
