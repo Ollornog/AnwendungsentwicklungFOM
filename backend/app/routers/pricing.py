@@ -48,7 +48,7 @@ def request_price(
     suggestion = PriceSuggestion(
         token=secrets.token_urlsafe(32),
         product_id=product.id,
-        strategy_kind=product.strategy.kind,
+        strategy=product.strategy.kind,
         price=result.price,
         currency=result.currency,
         is_llm_suggestion=result.is_llm_suggestion,
@@ -88,7 +88,7 @@ def confirm_price(
 
     entry = PriceHistory(
         product_id=product.id,
-        strategy_kind=suggestion.strategy_kind,
+        strategy=suggestion.strategy,
         price=suggestion.price,
         currency=suggestion.currency,
         is_llm_suggestion=suggestion.is_llm_suggestion,

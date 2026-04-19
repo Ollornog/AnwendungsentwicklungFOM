@@ -27,7 +27,7 @@ Für die Abschluss-Demo soll der Prototyp auf einem Debian-12-Server laufen. Gef
 - `.env` wird vom `install.sh` beim ersten Lauf erzeugt, `SESSION_SECRET` zufällig befüllt.
 - Wiederholte Läufe des Skripts aktualisieren Code und Migrationen, ohne Daten zu verwerfen.
 - Bei Bedarf kann das Team später auf Container / Compose umsteigen; bis dahin ist das Shell-Skript gut lesbar und ohne Zusatztooling.
-- HTTPS ist bewusst nicht Teil des Prototyps (siehe `docs/security.md`). Für Produktion würde nginx via `certbot` + Let's Encrypt erweitert.
+- **HTTP-only, bewusst.** Der Prototyp läuft dauerhaft ohne TLS (siehe `docs/security.md`). Kein `certbot`, kein HSTS, kein Redirect. Begründung: Demo-Umgebung, keine personenbezogenen Daten, keine Zahlungsabwicklung.
 
 ## Alternativen
 - **Docker-Compose:** Schöner für Reproduzierbarkeit, aber zusätzlicher Lernaufwand und Overhead. Für den Demo-Scope nicht nötig.

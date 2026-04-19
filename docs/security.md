@@ -18,3 +18,12 @@ Wir orientieren uns an **Art. 32 DSGVO (Technische und organisatorische Maßnahm
 - Keys und Credentials werden nicht geloggt.
 - Fehlermeldungen geben keine internen Details nach außen.
 - Jede Preisberechnung erzeugt genau einen Historien-Eintrag (Nachvollziehbarkeit).
+
+## Transport: HTTP-only (bewusste Entscheidung)
+Der Prototyp läuft ausschließlich über HTTP. HTTPS, `certbot`, HSTS etc. sind **nicht** Teil des Projektumfangs. Begründung:
+
+- Demo-Umgebung ist lokal bzw. auf einem Hochschul-/Testserver, keine echten Produktdaten, keine personenbezogenen Endkundendaten (Leitprinzip 1).
+- Keine Zahlungsabwicklung, keine Vertraulichkeitsanforderung an den Transport.
+- Session-Cookie nutzt `SameSite=Lax` und `HttpOnly`; ohne TLS ist das Cookie im Klartext sichtbar, das wird für den Prototyp akzeptiert.
+
+Für einen Produktiveinsatz wäre HTTPS zwingend. Das ist in der Produktiv-Ausblick-Spalte oben festgehalten und bewusst nicht umgesetzt.

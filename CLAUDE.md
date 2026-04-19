@@ -78,7 +78,6 @@ Diese Datei ist die zentrale Wahrheit dieses Projekts. Vor jeder Aufgabe lesen, 
 - [ ] Team-Rollen festlegen (Backend, Frontend, DB, Doku) – verantwortlich: Team – Deadline: 1. Treffen
 - [ ] Kostenrahmen Gemini (freier Tier vs. bezahlter Tarif) klären – ADR 0002 ergänzen
 - [ ] Auf echtem Debian-12-Server testen (`sudo ./install.sh`) und Erkenntnisse in ADR 0005 ergänzen
-- [ ] HTTPS + `certbot` vor produktivem Einsatz ergänzen (nicht Teil des Prototyps)
 - [ ] `docs/contributions.md` und `docs/demo-script.md` vor der Abschlusspräsentation befüllen
 
 ## 10. Änderungshistorie (nur relevante Entscheidungen)

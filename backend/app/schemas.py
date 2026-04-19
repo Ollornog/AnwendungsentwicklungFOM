@@ -86,7 +86,7 @@ class HistoryItem(BaseModel):
     created_at: datetime
     price: Decimal
     currency: str
-    strategy: StrategyKind = Field(alias="strategy_kind")
+    strategy: StrategyKind
     is_llm_suggestion: bool
     inputs: dict[str, Any]
     reasoning: str | None

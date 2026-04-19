@@ -94,7 +94,7 @@ class PriceHistory(Base):
     product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    strategy_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    strategy: Mapped[str] = mapped_column("strategy_kind", String(16), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
     is_llm_suggestion: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -112,7 +112,7 @@ class PriceSuggestion(Base):
     product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
     )
-    strategy_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    strategy: Mapped[str] = mapped_column("strategy_kind", String(16), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
     is_llm_suggestion: Mapped[bool] = mapped_column(Boolean, nullable=False)
