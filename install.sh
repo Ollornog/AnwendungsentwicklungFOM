@@ -273,7 +273,10 @@ write_env_file() {
   fi
   umask 077
   cat > "$env_file" <<EOF
-DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}
+# client_encoding erzwingt UTF-8 auf dem Verbindungs-Kanal. Ohne das gibt
+# psycopg bei Clustern mit SQL_ASCII-Encoding bytes statt str zurück, und
+# SQLAlchemy scheitert beim Parsen der Server-Version mit einem TypeError.
+DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?client_encoding=utf8
 SESSION_SECRET=${session_secret}
 APP_ENV=production
 GEMINI_API_KEY=${GEMINI_API_KEY}
