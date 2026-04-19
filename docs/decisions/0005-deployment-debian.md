@@ -14,7 +14,7 @@ Für die Abschluss-Demo soll der Prototyp auf einem Debian-12-Server laufen. Gef
 - **Reverse-Proxy:** nginx auf Port 80 (`deploy/nginx-preisopt.conf`). Abschaltbar per `install.sh --no-nginx`.
 - **Frontend:** FastAPI liefert `frontend/` via `StaticFiles` aus; kein separater Build.
 - **Zielverzeichnis:** `/opt/preisopt/` mit System-User `preisopt`.
-- **Bootstrap:** `install.sh` im Repo-Root, idempotent, ruft `apt`, richtet Postgres-User, venv, Migration, Seed und Services ein.
+- **Bootstrap:** `install.sh` im Repo-Root, idempotent, ausgelegt auf eine **frisch installierte Debian-12-Maschine**. Einzige Voraussetzung: Root-Rechte und Internet. Das Skript installiert alle nötigen Pakete (Python-Stack, PostgreSQL, nginx, `rsync`, Build-Tools, TLS-Roots, UTF-8-Locale, TZ-Daten) aus den Debian-Repos, legt den System-User an, richtet DB, venv, Migrationen, Seed und Services ein und schließt mit einem Smoke-Test gegen den Health-Endpoint ab. Keine Fremdquellen, kein `curl | bash`.
 
 ## Begründung
 - Debian 12 ist Standard in der Hochschulumgebung und bietet stabile Pakete.
@@ -26,6 +26,7 @@ Für die Abschluss-Demo soll der Prototyp auf einem Debian-12-Server laufen. Gef
 ## Konsequenzen
 - `.env` wird vom `install.sh` beim ersten Lauf erzeugt, `SESSION_SECRET` zufällig befüllt.
 - Wiederholte Läufe des Skripts aktualisieren Code und Migrationen, ohne Daten zu verwerfen.
+- Das Skript nutzt `runuser` (Teil von `util-linux`, immer vorhanden) statt `sudo` — läuft damit auch auf minimalen Debian-Images, auf denen `sudo` nicht installiert ist.
 - Bei Bedarf kann das Team später auf Container / Compose umsteigen; bis dahin ist das Shell-Skript gut lesbar und ohne Zusatztooling.
 - **HTTP-only, bewusst.** Der Prototyp läuft dauerhaft ohne TLS (siehe `docs/security.md`). Kein `certbot`, kein HSTS, kein Redirect. Begründung: Demo-Umgebung, keine personenbezogenen Daten, keine Zahlungsabwicklung.
 

@@ -2,8 +2,12 @@
 #
 # install.sh – Setup der Preisoptimierung auf Debian 12.
 #
-# Idempotent: erneuter Aufruf aktualisiert Code und Abhängigkeiten, ohne Daten zu verlieren.
-# Benötigt Root (apt, systemd, nginx, postgres).
+# Ausgelegt auf ein FRISCH installiertes Debian 12 (Netinstall/Cloud-Image) –
+# setzt nichts voraus außer Root-Rechten und Internet. Alle Abhängigkeiten
+# werden über `apt` bezogen; es werden keine Fremdquellen hinzugefügt.
+#
+# Idempotent: erneuter Aufruf aktualisiert Code und Abhängigkeiten, ohne
+# Daten zu verlieren.
 #
 # Ergebnis:
 #   - PostgreSQL 16 mit Datenbank 'preisopt' und User 'preisopt'
@@ -12,9 +16,12 @@
 #   - nginx-Reverse-Proxy auf Port 80 → uvicorn
 #
 # Nutzung:
-#   sudo ./install.sh                 – vollständige Einrichtung (fragt nach Admin-Passwort)
-#   sudo ./install.sh --skip-seed     – keine Mock-Produkte anlegen
-#   sudo ./install.sh --no-nginx      – ohne Reverse-Proxy (uvicorn direkt auf 8000)
+#   ./install.sh                    – als root aufrufen
+#   sudo ./install.sh               – mit sudo
+#   ./install.sh --skip-seed        – keine Mock-Produkte anlegen
+#   ./install.sh --no-nginx         – ohne Reverse-Proxy (uvicorn direkt auf 8000)
+#   ./install.sh --upgrade-system   – vorher `apt-get upgrade` ausführen
+#   ./install.sh --admin-username x – Admin-User überschreiben (Default: admin)
 
 set -euo pipefail
 
@@ -27,6 +34,7 @@ PY_BIN="python3"
 
 SKIP_SEED=false
 WITH_NGINX=true
+UPGRADE_SYSTEM=false
 ADMIN_USERNAME="admin"
 ADMIN_PASSWORD="${PREISOPT_ADMIN_PASSWORD:-}"
 DB_PASSWORD="${PREISOPT_DB_PASSWORD:-}"
@@ -40,9 +48,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-seed) SKIP_SEED=true ;;
     --no-nginx) WITH_NGINX=false ;;
+    --upgrade-system) UPGRADE_SYSTEM=true ;;
     --admin-username) ADMIN_USERNAME="$2"; shift ;;
     -h|--help)
-      sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     *) die "Unbekannte Option: $1" ;;
   esac
@@ -51,13 +60,34 @@ done
 
 [[ $EUID -eq 0 ]] || die "Bitte als root ausführen (sudo ./install.sh)."
 
+# runuser ist Teil von util-linux und damit auf jedem Debian verfügbar,
+# auch wenn sudo nicht installiert ist. Wir nutzen es überall, wo wir in
+# einen anderen User wechseln müssen.
+as_user() {
+  local target_user="$1"; shift
+  runuser -u "$target_user" -- "$@"
+}
+
+as_user_shell() {
+  local target_user="$1"; shift
+  runuser -u "$target_user" -- bash -c "$*"
+}
+
 require_debian_12() {
-  if [[ -r /etc/os-release ]]; then
-    # shellcheck disable=SC1091
-    . /etc/os-release
-    if [[ "${ID:-}" == "debian" && "${VERSION_ID:-}" != "12" ]]; then
-      warn "Ziel ist Debian 12, erkannt wurde ${PRETTY_NAME:-unbekannt}. Fortfahren."
-    fi
+  [[ -r /etc/os-release ]] || { warn "/etc/os-release fehlt – fahre trotzdem fort."; return; }
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  if [[ "${ID:-}" != "debian" ]]; then
+    warn "Erkannt: ${PRETTY_NAME:-unbekannt}. Skript ist auf Debian 12 ausgelegt."
+  elif [[ "${VERSION_ID:-}" != "12" ]]; then
+    warn "Erkannt: ${PRETTY_NAME:-unbekannt}. Ziel ist Debian 12 – fahre trotzdem fort."
+  fi
+}
+
+require_internet() {
+  log "Internetverbindung prüfen"
+  if ! getent hosts deb.debian.org >/dev/null 2>&1; then
+    die "deb.debian.org ist nicht auflösbar. DNS/Netzwerk prüfen."
   fi
 }
 
@@ -73,26 +103,69 @@ prompt_secrets() {
   fi
   if [[ -z "$DB_PASSWORD" ]]; then
     DB_PASSWORD="$(random_password)"
-    log "DB-Passwort generiert (wird in /opt/preisopt/.env gespeichert)."
+    log "DB-Passwort generiert (wird in $APP_DIR/.env gespeichert)."
   fi
 }
 
 install_packages() {
-  log "apt: Pakete installieren"
+  log "apt: Paketlisten aktualisieren"
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
+
+  if $UPGRADE_SYSTEM; then
+    log "apt: System aktualisieren (--upgrade-system)"
+    apt-get upgrade -y -qq
+  fi
+
+  log "apt: Pakete installieren"
+  # Alles, was der Prototyp braucht – bewusst ohne Fremdquellen.
+  # Jedes Paket ist begründet:
+  #   ca-certificates, curl   – TLS-Roots für pip/PyPI, curl zur Diagnose
+  #   gnupg, lsb-release      – Standardwerkzeuge, zukünftige Repo-Keys
+  #   locales, tzdata         – UTF-8 und Zeitzonen (Cloud-Images haben das
+  #                             oft nicht, ohne scheitern Logs/Datums-Formate)
+  #   rsync                   – wird in deploy_code() zum Kopieren benutzt
+  #   git                     – falls der User das Repo mit git pull aktualisiert
+  #   build-essential         – C-Toolchain für pip-Wheels als Fallback
+  #   python3, -venv, -dev    – Python-Runtime und venv-Support
+  #   libpq-dev, libffi-dev,  – Header für psycopg, argon2-cffi, cryptography,
+  #   libssl-dev                falls kein Binärwheel verfügbar ist
+  #   postgresql, -contrib    – Datenbank + Extensions (pgcrypto)
+  #   nginx                   – Reverse-Proxy (optional via --no-nginx)
   local pkgs=(
-    ca-certificates curl git build-essential
+    ca-certificates curl gnupg lsb-release
+    locales tzdata
+    rsync git build-essential
     python3 python3-venv python3-dev
-    postgresql postgresql-contrib libpq-dev
+    libpq-dev libffi-dev libssl-dev
+    postgresql postgresql-contrib
   )
   if $WITH_NGINX; then pkgs+=(nginx); fi
   apt-get install -y --no-install-recommends "${pkgs[@]}"
+
+  # UTF-8-Locale sicherstellen (Cloud-Images laufen gern nur mit POSIX).
+  if ! locale -a 2>/dev/null | grep -qiE '^(C\.utf-?8|en_US\.utf-?8)$'; then
+    log "Locale: C.UTF-8 erzeugen"
+    sed -i -E 's/^# *(C\.UTF-8)/\1/' /etc/locale.gen 2>/dev/null || true
+    echo "C.UTF-8 UTF-8" >> /etc/locale.gen
+    locale-gen >/dev/null
+  fi
+}
+
+wait_for_postgres() {
+  log "Warte auf PostgreSQL-Cluster"
+  for _ in $(seq 1 30); do
+    if as_user postgres psql -tAc 'SELECT 1' >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+  done
+  die "PostgreSQL wurde nicht innerhalb 30 Sekunden erreichbar."
 }
 
 ensure_app_user() {
   if ! id -u "$APP_USER" >/dev/null 2>&1; then
-    log "Benutzer '$APP_USER' anlegen"
+    log "System-Benutzer '$APP_USER' anlegen"
     useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$APP_USER"
   fi
 }
@@ -106,24 +179,26 @@ deploy_code() {
 }
 
 setup_postgres() {
-  log "PostgreSQL: Benutzer und Datenbank einrichten"
+  log "PostgreSQL: Dienst starten"
   systemctl enable --now postgresql >/dev/null 2>&1 || true
+  wait_for_postgres
 
+  log "PostgreSQL: Benutzer und Datenbank einrichten"
   local user_exists
-  user_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'")
+  user_exists=$(as_user postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'")
   if [[ "$user_exists" == "1" ]]; then
-    sudo -u postgres psql -c "ALTER USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" >/dev/null
+    as_user postgres psql -c "ALTER USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" >/dev/null
   else
-    sudo -u postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" >/dev/null
+    as_user postgres psql -c "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" >/dev/null
   fi
 
   local db_exists
-  db_exists=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'")
+  db_exists=$(as_user postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'")
   if [[ "$db_exists" != "1" ]]; then
-    sudo -u postgres createdb -O "$DB_USER" "$DB_NAME"
+    as_user postgres createdb -O "$DB_USER" "$DB_NAME"
   fi
 
-  sudo -u postgres psql -d "$DB_NAME" -c 'CREATE EXTENSION IF NOT EXISTS "pgcrypto";' >/dev/null
+  as_user postgres psql -d "$DB_NAME" -c 'CREATE EXTENSION IF NOT EXISTS "pgcrypto";' >/dev/null
 }
 
 write_env_file() {
@@ -151,14 +226,15 @@ EOF
 
 setup_venv() {
   log "Python venv und Abhängigkeiten"
-  sudo -u "$APP_USER" "$PY_BIN" -m venv "$APP_DIR/.venv"
-  sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install --upgrade pip wheel
-  sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install -r "$APP_DIR/backend/requirements.txt"
+  as_user "$APP_USER" "$PY_BIN" -m venv "$APP_DIR/.venv"
+  as_user "$APP_USER" "$APP_DIR/.venv/bin/pip" install --quiet --upgrade pip wheel
+  as_user "$APP_USER" "$APP_DIR/.venv/bin/pip" install --quiet -r "$APP_DIR/backend/requirements.txt"
 }
 
 run_migrations() {
   log "Alembic: Migrationen anwenden"
-  sudo -u "$APP_USER" bash -c "cd $APP_DIR/backend && set -a && source $APP_DIR/.env && set +a && $APP_DIR/.venv/bin/alembic upgrade head"
+  as_user_shell "$APP_USER" \
+    "cd '$APP_DIR/backend' && set -a && source '$APP_DIR/.env' && set +a && '$APP_DIR/.venv/bin/alembic' upgrade head"
 }
 
 run_seed() {
@@ -167,7 +243,8 @@ run_seed() {
     return
   fi
   log "Seed: Admin-User und Mock-Produkte"
-  sudo -u "$APP_USER" bash -c "cd $APP_DIR/backend && set -a && source $APP_DIR/.env && set +a && $APP_DIR/.venv/bin/python -m seed --username '$ADMIN_USERNAME' --password '$ADMIN_PASSWORD'"
+  as_user_shell "$APP_USER" \
+    "cd '$APP_DIR/backend' && set -a && source '$APP_DIR/.env' && set +a && '$APP_DIR/.venv/bin/python' -m seed --username '$ADMIN_USERNAME' --password '$ADMIN_PASSWORD'"
 }
 
 install_systemd() {
@@ -189,6 +266,25 @@ install_nginx() {
   systemctl reload nginx
 }
 
+smoke_test() {
+  log "Smoke-Test: Health-Endpoint"
+  local target
+  if $WITH_NGINX; then
+    target="http://127.0.0.1/api/v1/health"
+  else
+    target="http://127.0.0.1:8000/api/v1/health"
+  fi
+  # systemd-Start ist asynchron, kurzer Retry.
+  for _ in $(seq 1 20); do
+    if curl -fsS "$target" >/dev/null 2>&1; then
+      log "Health-Endpoint antwortet: $target"
+      return
+    fi
+    sleep 1
+  done
+  warn "Health-Endpoint $target antwortet nicht. Prüfen: journalctl -u preisopt-backend -n 50"
+}
+
 summary() {
   local port
   if $WITH_NGINX; then port=80; else port=8000; fi
@@ -197,6 +293,7 @@ summary() {
   printf '  Admin-User:  %s\n' "$ADMIN_USERNAME"
   printf '  .env:        %s/.env\n' "$APP_DIR"
   printf '  Service:     systemctl status preisopt-backend\n'
+  printf '  Logs:        journalctl -u preisopt-backend -f\n'
   if [[ -z "$GEMINI_API_KEY" ]]; then
     warn "GEMINI_API_KEY ist leer — LLM-Strategie schlägt fehl, bis er in $APP_DIR/.env gesetzt ist."
   fi
@@ -204,6 +301,7 @@ summary() {
 
 main() {
   require_debian_12
+  require_internet
   prompt_secrets
   install_packages
   ensure_app_user
@@ -215,6 +313,7 @@ main() {
   run_seed
   install_systemd
   install_nginx
+  smoke_test
   summary
 }
 
