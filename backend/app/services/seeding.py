@@ -65,23 +65,24 @@ def ensure_admin_and_mock_products(
 
 
 def reset_database(db: Session, user_id) -> None:
-    """Loescht fuer den angegebenen User alle Produkte + History + Settings.
+    """Loescht fuer den angegebenen User alle Produkte + History.
 
-    Behalten bleiben: der User selbst und andere Benutzer. Die `app_settings`
-    sind global und werden mit geleert, damit ein API-Key-Override ebenfalls
-    weg ist (der User hat das explizit ausgeloest).
+    Behalten bleiben:
+      - der User selbst (inkl. Passwort-Hash) und andere Benutzer
+      - `app_settings` (insbesondere der per UI gesetzte Gemini-API-Key)
+
+    Produkte loeschen kaskadiert ueber FK-ON-DELETE die daran haengenden
+    Strategien und PriceHistory-Eintraege; offene PriceSuggestions werden
+    ebenfalls mitgenommen.
     """
-    from app.models import AppSetting, PriceHistory, PriceSuggestion, PricingStrategy
+    from app.models import PriceHistory, PriceSuggestion
 
-    # Nur die Produkte des Users – pricing_strategies/history haengen via FK
-    # an den Produkten und werden durch ON DELETE CASCADE mitgenommen.
+    # Produkte des Users – pricing_strategies/history/suggestions haengen
+    # per FK CASCADE dran und werden mitgenommen.
     db.query(Product).filter(Product.owner_id == user_id).delete(synchronize_session=False)
-    # app_settings sind global (kein owner) – komplett leeren.
-    db.query(AppSetting).delete(synchronize_session=False)
-    # History und Suggestions, die aus irgendwelchen Gruenden nicht mitkaskadiert sind
-    # (z. B. wenn user_id gesetzt war aber Produkt nicht geloescht wurde), bereinigen.
+    # Waisen-Cleanup: PriceSuggestion und History-Zeilen ohne Produkt-
+    # Bezug (Edge-Cases) entfernen wir sicherheitshalber auch.
     db.query(PriceSuggestion).delete(synchronize_session=False)
-    # PriceHistory des Users (falls user_id gesetzt und Produkt bereits weg ist).
     db.query(PriceHistory).filter(PriceHistory.user_id == user_id).delete(
         synchronize_session=False
     )

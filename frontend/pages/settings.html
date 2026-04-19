@@ -78,10 +78,34 @@
     </article>
 
     <article>
+      <header><strong>Passwort ändern</strong></header>
+      <form @submit.prevent="changePassword">
+        <label>Aktuelles Passwort
+          <input type="password" x-model="pw.current" autocomplete="current-password" required>
+        </label>
+        <div class="grid">
+          <label>Neues Passwort (min. 6 Zeichen)
+            <input type="password" x-model="pw.new1" autocomplete="new-password"
+                   minlength="6" required>
+          </label>
+          <label>Neues Passwort wiederholen
+            <input type="password" x-model="pw.new2" autocomplete="new-password"
+                   minlength="6" required>
+          </label>
+        </div>
+        <small class="error" x-show="pw.error" x-text="pw.error"></small>
+        <small x-show="pw.message" style="color:green" x-text="pw.message"></small>
+        <footer>
+          <button type="submit" :disabled="pw.saving" :aria-busy="pw.saving">Passwort speichern</button>
+        </footer>
+      </form>
+    </article>
+
+    <article>
       <header><strong>Datenbank zurücksetzen</strong></header>
       <p class="muted">
-        Setzt alle Produkte, Strategien, Preishistorie und Einstellungen
-        zurück auf den Seed-Stand. Der Admin-Account bleibt erhalten.
+        Setzt alle Produkte, Strategien und Preishistorie zurück auf den
+        Seed-Stand. Admin-Account und API-Key bleiben erhalten.
         <strong>Vorsicht: die Aktion kann nicht rückgängig gemacht werden.</strong>
       </p>
       <small class="error" x-show="resetError" x-text="resetError"></small>
@@ -108,6 +132,7 @@
         resetting: false,
         resetError: '',
         resetMessage: '',
+        pw: { current: '', new1: '', new2: '', saving: false, error: '', message: '' },
 
         async load() {
           this.loading = true;
@@ -153,6 +178,35 @@
             this.error = e.message;
           } finally {
             this.saving = false;
+          }
+        },
+
+        async changePassword() {
+          this.pw.error = '';
+          this.pw.message = '';
+          if (this.pw.new1.length < 6) {
+            this.pw.error = 'Neues Passwort muss mindestens 6 Zeichen haben.';
+            return;
+          }
+          if (this.pw.new1 !== this.pw.new2) {
+            this.pw.error = 'Die neuen Passwörter stimmen nicht überein.';
+            return;
+          }
+          this.pw.saving = true;
+          try {
+            await window.api.post('/auth/password', {
+              current_password: this.pw.current,
+              new_password: this.pw.new1,
+            });
+            this.pw.current = '';
+            this.pw.new1 = '';
+            this.pw.new2 = '';
+            this.pw.message = 'Passwort geändert.';
+            setTimeout(() => { this.pw.message = ''; }, 4000);
+          } catch (e) {
+            this.pw.error = e.message;
+          } finally {
+            this.pw.saving = false;
           }
         },
 
