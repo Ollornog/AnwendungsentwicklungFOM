@@ -93,7 +93,10 @@ require_internet() {
 }
 
 random_password() {
-  tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32
+  # head schließt die Pipe nach 32 Bytes, tr erhält SIGPIPE. Mit
+  # `set -o pipefail` würde das den gesamten Lauf stillschweigend abbrechen –
+  # daher pipefail lokal im Subshell deaktivieren.
+  (set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32)
 }
 
 prompt_secrets() {
