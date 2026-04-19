@@ -22,13 +22,14 @@ Diese Datei ist die zentrale Wahrheit dieses Projekts. Vor jeder Aufgabe lesen, 
 - Details: `docs/architecture.md`.
 
 ## 4. Tech-Stack (aktuell entschieden)
-- Backend: Python 3.12 + FastAPI
+- Backend: Python 3.11 + FastAPI, SQLAlchemy 2.x, Alembic
 - Datenbank: PostgreSQL 16
 - Frontend: HTML5 + Alpine.js 3 + Pico.css 2, via CDN, zero-build (siehe `docs/decisions/0004-frontend-stack.md`)
 - Auslieferung Frontend: FastAPI `StaticFiles` (gleiches Origin wie API)
 - Auth: Session-Cookie, HttpOnly, SameSite=Lax (siehe `docs/decisions/0003-auth-session-cookie.md`)
 - LLM-API: Google Gemini (vorläufig für den Prototyp – siehe `docs/decisions/0002-llm-provider.md`)
-- Begründung & Stand: `docs/decisions/0001-tech-stack.md`, `docs/decisions/0002-llm-provider.md`, `docs/decisions/0003-auth-session-cookie.md`, `docs/decisions/0004-frontend-stack.md`
+- Deployment: Debian 12 + nginx + systemd, Setup via `install.sh` (siehe `docs/decisions/0005-deployment-debian.md`)
+- Begründung & Stand: `docs/decisions/0001-tech-stack.md`, `0002-llm-provider.md`, `0003-auth-session-cookie.md`, `0004-frontend-stack.md`, `0005-deployment-debian.md`
 
 ## 5. Leitprinzipien (verbindlich)
 1. **Keine personenbezogenen Daten im Scope.** Verarbeitet werden nur Produktdaten (Name, Kosten, Lager, Wettbewerbspreis). Kein personalisiertes Pricing, keine Endkundenprofile. DSGVO-Scope damit minimal.
@@ -76,11 +77,12 @@ Diese Datei ist die zentrale Wahrheit dieses Projekts. Vor jeder Aufgabe lesen, 
 ## 9. Offene Punkte & nächste Schritte
 - [ ] Team-Rollen festlegen (Backend, Frontend, DB, Doku) – verantwortlich: Team – Deadline: 1. Treffen
 - [ ] Kostenrahmen Gemini (freier Tier vs. bezahlter Tarif) klären – ADR 0002 ergänzen
-- [ ] Erstes Datenmodell für Produkt + Strategie + Historie skizzieren – `docs/data-model.md`
-- [ ] API-Grundgerüst (FastAPI-Projekt) initialisieren, Frontend via `StaticFiles` einbinden
+- [ ] Auf echtem Debian-12-Server testen (`sudo ./install.sh`) und Erkenntnisse in ADR 0005 ergänzen
+- [ ] HTTPS + `certbot` vor produktivem Einsatz ergänzen (nicht Teil des Prototyps)
 - [ ] `docs/contributions.md` und `docs/demo-script.md` vor der Abschlusspräsentation befüllen
 
 ## 10. Änderungshistorie (nur relevante Entscheidungen)
 - 2026-04-19 – Initiale Doku-Struktur und ADR 0001 (Tech-Stack) angelegt – Commit `chore: initial documentation scaffolding`
 - 2026-04-19 – LLM-Provider festgelegt (Google Gemini, vorläufig), Leitprinzipien, Compliance- und Security-Doku ergänzt – Commit `docs: compliance and security scaffolding`
 - 2026-04-19 – Frontend-Stack (Alpine.js + Pico.css, ADR 0004) und Auth (Session-Cookie, ADR 0003) festgelegt, Frontend-Scaffold angelegt – Commit `feat: frontend scaffolding with alpine and pico`
+- 2026-04-19 – Backend (FastAPI + SQLAlchemy + Alembic), Preisstrategien, Gemini-Client und Debian-12-Deployment (ADR 0005) implementiert – Commit `feat: backend database strategies and debian installer`

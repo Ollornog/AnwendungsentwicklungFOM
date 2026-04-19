@@ -1,0 +1,22 @@
+[Unit]
+Description=Preisopt FastAPI Backend
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=preisopt
+Group=preisopt
+WorkingDirectory=/opt/preisopt/backend
+EnvironmentFile=/opt/preisopt/.env
+ExecStart=/opt/preisopt/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/preisopt
+
+[Install]
+WantedBy=multi-user.target
