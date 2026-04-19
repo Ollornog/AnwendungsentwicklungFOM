@@ -5,7 +5,7 @@ Studentisches Semesterprojekt der FOM Hochschule, Modul Anwendungsentwicklung.
 ## Installation auf Debian 12
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/Ollornog/AnwendungsentwicklungFOM
 cd AnwendungsentwicklungFOM
 sudo ./install.sh
 ```
