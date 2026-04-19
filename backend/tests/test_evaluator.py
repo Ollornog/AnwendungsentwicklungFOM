@@ -76,9 +76,13 @@ def test_blocks_dangerous_constructs(expression):
         evaluate(expression, {"x": 1, "a": 1})
 
 
-def test_bool_arithmetic_rejected():
-    with pytest.raises(ExpressionError):
-        evaluate_decimal("flag + 1", {"flag": True})
+def test_bool_arithmetic_coerces_to_int():
+    # Absicht: bool -> 1/0 in Arithmetik, damit Formeln wie
+    # `(hour >= 18) * 0.2` als bedingter Aufschlag funktionieren.
+    assert evaluate_decimal("flag + 1", {"flag": True}) == Decimal("2")
+    assert evaluate_decimal("flag * 5", {"flag": False}) == Decimal("0")
+    assert evaluate_decimal("(hour >= 18) * 0.2", {"hour": 20}) == Decimal("0.2")
+    assert evaluate_decimal("(hour >= 18) * 0.2", {"hour": 10}) == Decimal("0")
 
 
 def test_comparison_not_valid_as_price():

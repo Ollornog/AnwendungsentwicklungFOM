@@ -1,17 +1,14 @@
 from app.models import Product
 from app.strategies.base import StrategyError, SuggestionResult
 from app.strategies.evaluator import ExpressionError, evaluate, evaluate_decimal
+from app.strategies.runtime import build_variables
 
 
-def _variables(product: Product) -> dict:
-    return {
-        "cost_price": product.cost_price,
-        "stock": product.stock,
-        "competitor_price": product.competitor_price if product.competitor_price is not None else 0,
-    }
-
-
-def compute(product: Product, config: dict) -> SuggestionResult:
+def compute(
+    product: Product,
+    config: dict,
+    runtime: dict | None = None,
+) -> SuggestionResult:
     rules = config.get("rules")
     fallback = config.get("fallback")
     if not isinstance(rules, list):
@@ -19,7 +16,7 @@ def compute(product: Product, config: dict) -> SuggestionResult:
     if not isinstance(fallback, str) or not fallback.strip():
         raise StrategyError("Regel-Strategie benötigt 'fallback' als Ausdruck")
 
-    variables = _variables(product)
+    variables = build_variables(product, runtime)
 
     for idx, rule in enumerate(rules):
         if not isinstance(rule, dict) or "when" not in rule or "then" not in rule:

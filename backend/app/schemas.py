@@ -25,6 +25,9 @@ class ProductBase(BaseModel):
     cost_price: Decimal = Field(ge=0)
     stock: int = Field(ge=0)
     competitor_price: Decimal | None = Field(default=None, ge=0)
+    context: str = Field(default="", max_length=2000)
+    monthly_demand: int = Field(default=0, ge=0)
+    daily_usage: int = Field(default=0, ge=0)
 
 
 class ProductCreate(ProductBase):
@@ -37,6 +40,9 @@ class ProductUpdate(BaseModel):
     cost_price: Decimal | None = Field(default=None, ge=0)
     stock: int | None = Field(default=None, ge=0)
     competitor_price: Decimal | None = Field(default=None, ge=0)
+    context: str | None = Field(default=None, max_length=2000)
+    monthly_demand: int | None = Field(default=None, ge=0)
+    daily_usage: int | None = Field(default=None, ge=0)
 
 
 StrategyKind = Literal["fix", "formula", "rule", "llm"]
@@ -65,6 +71,19 @@ class ProductList(BaseModel):
     items: list[ProductOut]
 
 
+class PriceRequest(BaseModel):
+    """Runtime-Kontext fuer die Preisberechnung (aus Frontend-Simulation).
+
+    Werte sind optional; wenn weggelassen, fallen Formeln auf Produkt-
+    Defaults (stock=start_stock, usage=daily_usage, hour=0, day=1) zurueck.
+    """
+
+    hour: int | None = Field(default=None, ge=0, le=23)
+    day: int | None = Field(default=None, ge=1, le=31)
+    current_stock: int | None = Field(default=None, ge=0)
+    usage: int | None = Field(default=None, ge=0)
+
+
 class PriceSuggestionOut(BaseModel):
     suggestion_token: str
     price: Decimal
@@ -77,6 +96,21 @@ class PriceSuggestionOut(BaseModel):
 
 class ConfirmRequest(BaseModel):
     suggestion_token: str
+
+
+SuggestTarget = Literal["fix", "formula"]
+
+
+class StrategySuggestRequest(BaseModel):
+    target: SuggestTarget
+    online: bool = False
+
+
+class StrategySuggestResponse(BaseModel):
+    target: SuggestTarget
+    amount: Decimal | None = None
+    expression: str | None = None
+    reasoning: str
 
 
 class HistoryItem(BaseModel):

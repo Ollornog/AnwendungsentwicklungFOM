@@ -43,6 +43,11 @@ class ExpressionError(ValueError):
 
 
 def _to_decimal(value: Any) -> Decimal:
+    # bool zuerst pruefen, weil bool Subklasse von int ist – ohne diesen
+    # Zweig wuerde Decimal(str(True)) fehlschlagen. Das ermoeglicht Muster
+    # wie `(hour >= 18) * 0.2` fuer bedingte Preise in einer Formel.
+    if isinstance(value, bool):
+        return Decimal(1) if value else Decimal(0)
     if isinstance(value, Decimal):
         return value
     if isinstance(value, (int, float)):
@@ -72,8 +77,8 @@ def _eval(node: ast.AST, variables: dict[str, Any]) -> Any:
             raise ExpressionError(f"Operator {type(node.op).__name__} nicht erlaubt")
         left = _eval(node.left, variables)
         right = _eval(node.right, variables)
-        if isinstance(left, bool) or isinstance(right, bool):
-            raise ExpressionError("Arithmetik auf Bool nicht erlaubt")
+        # bool wird in _to_decimal auf 1/0 gemappt, damit Formeln wie
+        # `(hour >= 18) * 0.2` als zeitabhaengiger Aufschlag funktionieren.
         return op(_to_decimal(left), _to_decimal(right))
 
     if isinstance(node, ast.UnaryOp):

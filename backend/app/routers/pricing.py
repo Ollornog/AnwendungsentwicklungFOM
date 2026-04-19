@@ -15,6 +15,7 @@ from app.schemas import (
     ConfirmRequest,
     HistoryItem,
     HistoryOut,
+    PriceRequest,
     PriceSuggestionOut,
 )
 from app.strategies import StrategyError, compute_price
@@ -34,13 +35,15 @@ def request_price(
     product_id: uuid.UUID,
     user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    payload: PriceRequest | None = None,
 ) -> PriceSuggestionOut:
     product = _get_owned_product(db, user, product_id)
     if product.strategy is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keine Strategie konfiguriert")
 
+    runtime = payload.model_dump(exclude_none=True) if payload is not None else None
     try:
-        result = compute_price(product, product.strategy.kind, product.strategy.config)
+        result = compute_price(product, product.strategy.kind, product.strategy.config, runtime)
     except StrategyError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 

@@ -14,6 +14,9 @@ class FakeProduct:
     cost_price: Decimal = Decimal("10.00")
     stock: int = 5
     competitor_price: Decimal | None = Decimal("25.00")
+    monthly_demand: int = 0
+    daily_usage: int = 0
+    context: str = ""
 
 
 def test_fix_strategy_returns_configured_amount():

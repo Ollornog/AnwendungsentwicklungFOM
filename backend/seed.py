@@ -23,6 +23,13 @@ MOCK_PRODUCTS = [
         "cost_price": Decimal("29.90"),
         "stock": 42,
         "competitor_price": Decimal("59.00"),
+        "monthly_demand": 80,
+        "daily_usage": 3,
+        "context": (
+            "Klassischer Lifestyle-Sneaker fuer Freizeit und Alltag. Der Wettbewerb "
+            "liegt je nach Marke zwischen 50 und 80 EUR, wir positionieren uns "
+            "preiswert und erwarten gleichmaessigen Absatz ueber den Monat."
+        ),
         "strategy": {
             "kind": "formula",
             "config": {"expression": "cost_price * 1.8"},
@@ -34,6 +41,13 @@ MOCK_PRODUCTS = [
         "cost_price": Decimal("4.50"),
         "stock": 120,
         "competitor_price": Decimal("14.90"),
+        "monthly_demand": 200,
+        "daily_usage": 8,
+        "context": (
+            "Einfaches Baumwoll-T-Shirt, hoher Durchsatz. Preiskaempfe in der "
+            "Kategorie sind ueblich; Rabatte zum Monatsende koennen den Absatz "
+            "pushen, wenn der Lagerbestand noch hoch ist."
+        ),
         "strategy": {
             "kind": "rule",
             "config": {
@@ -51,6 +65,13 @@ MOCK_PRODUCTS = [
         "cost_price": Decimal("9.80"),
         "stock": 30,
         "competitor_price": Decimal("18.50"),
+        "monthly_demand": 60,
+        "daily_usage": 2,
+        "context": (
+            "Hochwertige Arabica-Bohnen, 1kg. Kundenstamm ist qualitaetsbewusst, "
+            "Premium-Marken im Wettbewerb kosten 18-22 EUR. Nachfrage steigt "
+            "gegen Monatsende (Gehaltseingang)."
+        ),
         "strategy": {
             "kind": "llm",
             "config": {

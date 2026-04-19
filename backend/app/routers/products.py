@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import get_current_user
+from app.llm import LLMResponseError, LLMUnavailableError, suggest_strategy
 from app.models import PricingStrategy, Product, User
 from app.schemas import (
     ProductCreate,
@@ -14,10 +15,27 @@ from app.schemas import (
     ProductOut,
     ProductUpdate,
     StrategyOut,
+    StrategySuggestRequest,
+    StrategySuggestResponse,
     StrategyUpsert,
 )
 
 router = APIRouter(prefix="/products", tags=["products"])
+
+
+def _strategy_whitelist(product: Product) -> dict:
+    """Nur diese Felder gehen an das LLM. Keine Kundendaten."""
+    return {
+        "name": product.name,
+        "category": product.category,
+        "cost_price": str(product.cost_price),
+        "competitor_price": (
+            str(product.competitor_price) if product.competitor_price is not None else None
+        ),
+        "stock": product.stock,
+        "monthly_demand": product.monthly_demand,
+        "context": product.context,
+    }
 
 
 def _get_owned_product(db: Session, user: User, product_id: uuid.UUID) -> Product:
@@ -104,3 +122,26 @@ def upsert_strategy(
     db.commit()
     db.refresh(product.strategy)
     return product.strategy
+
+
+@router.post("/{product_id}/strategy/suggest", response_model=StrategySuggestResponse)
+def suggest_strategy_endpoint(
+    product_id: uuid.UUID,
+    payload: StrategySuggestRequest,
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> StrategySuggestResponse:
+    product = _get_owned_product(db, user, product_id)
+    whitelist = _strategy_whitelist(product)
+    try:
+        result = suggest_strategy(payload.target, payload.online, whitelist)
+    except LLMUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except LLMResponseError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    return StrategySuggestResponse(
+        target=result.target,
+        amount=result.amount,
+        expression=result.expression,
+        reasoning=result.reasoning,
+    )

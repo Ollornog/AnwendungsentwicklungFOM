@@ -11,13 +11,23 @@ _REGISTRY = {
     "llm": llm.compute,
 }
 
+_RUNTIME_AWARE = {"formula", "rule"}
+
 _PRICE_QUANTUM = Decimal("0.01")
 
 
-def compute_price(product: Product, kind: str, config: dict) -> SuggestionResult:
+def compute_price(
+    product: Product,
+    kind: str,
+    config: dict,
+    runtime: dict | None = None,
+) -> SuggestionResult:
     compute_fn = _REGISTRY.get(kind)
     if compute_fn is None:
         raise StrategyError(f"Unbekannte Strategie: {kind}")
-    result = compute_fn(product, config)
+    if kind in _RUNTIME_AWARE:
+        result = compute_fn(product, config, runtime)
+    else:
+        result = compute_fn(product, config)
     result.price = Decimal(result.price).quantize(_PRICE_QUANTUM)
     return result
