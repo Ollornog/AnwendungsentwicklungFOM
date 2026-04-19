@@ -1,16 +1,18 @@
 """Sicherer arithmetischer Evaluator für Formel- und Regel-Strategien.
 
 Erlaubt nur Zahlen, whitelisted Variablen, +, -, *, /, //, %, **, Klammern,
-Vergleiche (für Regeln) und boolsche Operatoren (and/or/not). Kein Funktionsaufruf,
-kein Attribut-Zugriff, kein Import. Rückgabe: Decimal (Arithmetik) oder bool (Vergleich).
+Vergleiche, boolsche Operatoren (and/or/not) und eine kleine Whitelist von
+Funktionsaufrufen (sqrt, pow, abs, min, max, round, floor, ceil). Keine
+Attribute, keine Imports, keine benutzerdefinierten Funktionen.
+Rückgabe: Decimal (Arithmetik) oder bool (Vergleich).
 """
 
 from __future__ import annotations
 
 import ast
 import operator
-from decimal import Decimal
-from typing import Any
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
+from typing import Any, Callable
 
 _ARITH_OPS: dict[type[ast.operator], Any] = {
     ast.Add: operator.add,
@@ -40,6 +42,65 @@ _CMP_OPS: dict[type[ast.cmpop], Any] = {
 
 class ExpressionError(ValueError):
     pass
+
+
+# Kleine Funktions-Whitelist. Absicht: einfache Mathematik, die man in
+# Preisformeln brauchen kann – sqrt fuer gedaempfte Skalierung, min/max fuer
+# Deckelungen, round/floor/ceil fuer Preis-Rundungen. Jede Funktion mappt
+# die Argumente ueber _to_decimal, damit bool -> 0/1 konsistent laeuft.
+def _fn_sqrt(x: Any) -> Decimal:
+    val = _to_decimal(x)
+    if val < 0:
+        raise ExpressionError("sqrt von negativer Zahl")
+    return val.sqrt()
+
+
+def _fn_pow(x: Any, y: Any) -> Decimal:
+    return _to_decimal(x) ** _to_decimal(y)
+
+
+def _fn_abs(x: Any) -> Decimal:
+    return abs(_to_decimal(x))
+
+
+def _fn_min(*args: Any) -> Decimal:
+    if not args:
+        raise ExpressionError("min() braucht mindestens ein Argument")
+    return min(_to_decimal(a) for a in args)
+
+
+def _fn_max(*args: Any) -> Decimal:
+    if not args:
+        raise ExpressionError("max() braucht mindestens ein Argument")
+    return max(_to_decimal(a) for a in args)
+
+
+def _fn_round(x: Any, digits: Any = 0) -> Decimal:
+    val = _to_decimal(x)
+    n = int(_to_decimal(digits))
+    # Decimal.quantize mit passendem Exponenten, bankers-rounding default.
+    quant = Decimal(1).scaleb(-n) if n >= 0 else Decimal(1).scaleb(-n)
+    return val.quantize(quant)
+
+
+def _fn_floor(x: Any) -> Decimal:
+    return _to_decimal(x).to_integral_value(rounding=ROUND_FLOOR)
+
+
+def _fn_ceil(x: Any) -> Decimal:
+    return _to_decimal(x).to_integral_value(rounding=ROUND_CEILING)
+
+
+_FUNCS: dict[str, Callable[..., Any]] = {
+    "sqrt": _fn_sqrt,
+    "pow": _fn_pow,
+    "abs": _fn_abs,
+    "min": _fn_min,
+    "max": _fn_max,
+    "round": _fn_round,
+    "floor": _fn_floor,
+    "ceil": _fn_ceil,
+}
 
 
 def _to_decimal(value: Any) -> Decimal:
@@ -94,6 +155,18 @@ def _eval(node: ast.AST, variables: dict[str, Any]) -> Any:
         if isinstance(node.op, ast.Or):
             return any(values)
         raise ExpressionError("BoolOp nicht erlaubt")
+
+    if isinstance(node, ast.Call):
+        # Nur whitelisted, namentlich aufgerufene Funktionen.
+        if not isinstance(node.func, ast.Name):
+            raise ExpressionError("Funktion muss ein einfacher Name sein")
+        fn = _FUNCS.get(node.func.id)
+        if fn is None:
+            raise ExpressionError(f"Funktion nicht erlaubt: {node.func.id}")
+        if node.keywords:
+            raise ExpressionError("Keyword-Argumente nicht erlaubt")
+        args = [_eval(a, variables) for a in node.args]
+        return fn(*args)
 
     if isinstance(node, ast.Compare):
         left = _eval(node.left, variables)

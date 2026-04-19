@@ -29,8 +29,8 @@
       </label>
       <label>
         <span class="muted">Tag</span>
-        <input type="range" min="1" max="31" x-model.number="sim.day">
-        <strong x-text="sim.day"></strong>
+        <input type="range" min="1" max="28" x-model.number="sim.day">
+        <strong x-text="sim.day + ' · ' + weekdayName(sim.day)"></strong>
       </label>
       <small class="muted" style="margin-left:auto"
              x-text="paused ? 'pausiert' : 'Tick 2 s'"></small>
@@ -288,6 +288,7 @@
         },
 
         varsFor(p) {
+          const day = Number(this.sim.day) || 1;
           return {
             cost_price: Number(p.cost_price),
             competitor_price: p.competitor_price != null ? Number(p.competitor_price) : 0,
@@ -296,8 +297,15 @@
             stock: Number(p._current_stock) || 0,
             usage: Number(p._usage) || 0,
             hour: Number(this.sim.hour) || 0,
-            day: Number(this.sim.day) || 1,
+            day: day,
+            weekday: ((day - 1) % 7) + 1,
           };
+        },
+
+        // Anzeige-Namen fuer den Wochentag. 1 = Montag, 7 = Sonntag.
+        weekdayName(day) {
+          const names = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+          return names[(((Number(day) || 1) - 1) % 7)];
         },
 
         // Live-Preis: nur fix und formula sind im Browser auswertbar.

@@ -114,6 +114,7 @@ table.compact .actions a {
 .token-bar .token-var  { border-color: var(--pico-primary); color: var(--pico-primary); }
 .token-bar .token-op   { border-color: var(--pico-muted-border-color); }
 .token-bar .token-cmp  { border-color: var(--pico-muted-color); color: var(--pico-muted-color); }
+.token-bar .token-fn   { border-color: #7a5af5; color: #7a5af5; }
 
 .modal-backdrop textarea[readonly] {
   background: var(--pico-card-sectionning-background-color, #f8f8f8);

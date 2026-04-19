@@ -147,6 +147,18 @@ _ALLOWED_FORMULA_VARS = (
     "usage",
     "hour",
     "day",
+    "weekday",
+)
+
+_ALLOWED_FORMULA_FUNCS = (
+    "sqrt",
+    "pow",
+    "abs",
+    "min",
+    "max",
+    "round",
+    "floor",
+    "ceil",
 )
 
 
@@ -179,15 +191,19 @@ def _strategy_prompt(target: str, online: bool, whitelist: dict[str, Any]) -> st
         )
     else:  # formula
         vars_list = ", ".join(_ALLOWED_FORMULA_VARS)
+        funcs_list = ", ".join(_ALLOWED_FORMULA_FUNCS)
         base += (
             "\nSchlage eine Preisformel vor. Erlaubte Variablen: "
             f"{vars_list}. "
+            "weekday ist 1=Montag, 2=Dienstag, …, 7=Sonntag. "
             "Erlaubte Operatoren: + - * / ** % ( ) sowie die Vergleiche "
             "< <= > >= == != (ein Vergleich ergibt 1 oder 0 und kann "
-            "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag). "
-            "Keine Funktionsaufrufe, keine Zuweisungen. Die Formel darf "
-            "vom Lagerbestand (stock), der Uhrzeit (hour) und dem Tag im "
-            "Monat (day) abhaengen.\n"
+            "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag "
+            "oder `(weekday == 7) * 3` als Sonntagsaufschlag). "
+            f"Erlaubte Funktionen: {funcs_list}. "
+            "Keine weiteren Funktionsaufrufe, keine Zuweisungen. Die Formel "
+            "darf vom Lagerbestand (stock), der Uhrzeit (hour), dem Tag im "
+            "Monat (day) und dem Wochentag (weekday) abhaengen.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '
             '"<kurz, max 2 Saetze>"}. Kein Freitext drum herum.'
         )
@@ -197,7 +213,8 @@ def _strategy_prompt(target: str, online: bool, whitelist: dict[str, Any]) -> st
 def _validate_expression(expression: str) -> None:
     import re
 
-    allowed = re.compile(r"^[0-9A-Za-z_+\-*/%.()\s<>!=&|]*$")
+    # ',' ist fuer mehrargumentige Funktionen wie min(a, b, c) noetig.
+    allowed = re.compile(r"^[0-9A-Za-z_+\-*/%.()\s<>!=&|,]*$")
     if not allowed.match(expression):
         raise LLMResponseError("Formel enthaelt ungueltige Zeichen")
     forbidden = ("__", "import", "lambda", "?", ":", ";")

@@ -14,6 +14,7 @@ document.addEventListener('alpine:init', () => {
     { label: 'usage', insert: 'usage', kind: 'var' },
     { label: 'hour', insert: 'hour', kind: 'var' },
     { label: 'day', insert: 'day', kind: 'var' },
+    { label: 'weekday', insert: 'weekday', kind: 'var' },
     { label: '+', insert: ' + ', kind: 'op' },
     { label: '−', insert: ' - ', kind: 'op' },
     { label: '×', insert: ' * ', kind: 'op' },
@@ -22,11 +23,20 @@ document.addEventListener('alpine:init', () => {
     { label: '%', insert: ' % ', kind: 'op' },
     { label: '(', insert: '(', kind: 'op' },
     { label: ')', insert: ')', kind: 'op' },
+    { label: ',', insert: ', ', kind: 'op' },
     { label: '>', insert: ' > ', kind: 'cmp' },
     { label: '>=', insert: ' >= ', kind: 'cmp' },
     { label: '<', insert: ' < ', kind: 'cmp' },
     { label: '<=', insert: ' <= ', kind: 'cmp' },
     { label: '==', insert: ' == ', kind: 'cmp' },
+    { label: 'sqrt(', insert: 'sqrt(', kind: 'fn' },
+    { label: 'pow(', insert: 'pow(', kind: 'fn' },
+    { label: 'abs(', insert: 'abs(', kind: 'fn' },
+    { label: 'min(', insert: 'min(', kind: 'fn' },
+    { label: 'max(', insert: 'max(', kind: 'fn' },
+    { label: 'round(', insert: 'round(', kind: 'fn' },
+    { label: 'floor(', insert: 'floor(', kind: 'fn' },
+    { label: 'ceil(', insert: 'ceil(', kind: 'fn' },
   ];
 
   Alpine.data('priceStrategyModal', () => ({

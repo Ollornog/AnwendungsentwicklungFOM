@@ -20,7 +20,9 @@ def build_variables(product: Product, runtime: dict | None) -> dict[str, Any]:
     current_stock = rt.get("current_stock")
     usage = rt.get("usage")
     hour = rt.get("hour")
-    day = rt.get("day")
+    day = 1 if rt.get("day") is None else int(rt.get("day"))
+    # weekday: 1 = Montag, 7 = Sonntag. Tag 1/8/15/22 ist Montag usw.
+    weekday = ((day - 1) % 7) + 1
     return {
         # statisch aus DB
         "cost_price": product.cost_price,
@@ -31,7 +33,8 @@ def build_variables(product: Product, runtime: dict | None) -> dict[str, Any]:
         "stock": product.stock if current_stock is None else current_stock,
         "usage": product.daily_usage if usage is None else usage,
         "hour": 0 if hour is None else hour,
-        "day": 1 if day is None else day,
+        "day": day,
+        "weekday": weekday,
     }
 
 
@@ -44,4 +47,16 @@ ALLOWED_VARIABLES = (
     "usage",
     "hour",
     "day",
+    "weekday",
+)
+
+ALLOWED_FUNCTIONS = (
+    "sqrt",
+    "pow",
+    "abs",
+    "min",
+    "max",
+    "round",
+    "floor",
+    "ceil",
 )
