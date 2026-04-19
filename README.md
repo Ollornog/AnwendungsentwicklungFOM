@@ -5,12 +5,18 @@ Studentisches Semesterprojekt der FOM Hochschule, Modul Anwendungsentwicklung.
 ## Installation auf Debian 12
 
 ```bash
-git clone <repo-url>
+# als root eingeloggt (oder mit sudo vorweg):
+apt-get update && apt-get install -y git
+git clone https://github.com/Ollornog/AnwendungsentwicklungFOM
 cd AnwendungsentwicklungFOM
-sudo ./install.sh
+./install.sh
 ```
 
 Das Skript ist auf eine **frisch installierte Debian-12-Maschine** ausgelegt. Voraussetzungen: Root-Rechte und eine Internetverbindung — sonst nichts. Alle Abhängigkeiten kommen aus den Debian-Repos, es werden keine Fremdquellen hinzugefügt.
+
+> Nicht als root eingeloggt? Dann `sudo ./install.sh` statt `./install.sh`. `sudo` ist auf minimalen Debian-Netinstalls aber nicht vorhanden — dann vorher `apt-get install -y sudo` oder direkt als root arbeiten.
+
+> Beim Passwort-Prompt: Die Eingabe ist **unsichtbar** (keine Sternchen). Einfach tippen und mit Enter bestätigen. Das Skript fragt anschließend zur Kontrolle noch einmal.
 
 Das Skript ist idempotent und erledigt alles in einem Schritt:
 

@@ -85,10 +85,11 @@ require_debian_12() {
 }
 
 require_internet() {
-  log "Internetverbindung prüfen"
+  log "Internetverbindung pruefen (deb.debian.org muss aufloesbar sein)"
   if ! getent hosts deb.debian.org >/dev/null 2>&1; then
-    die "deb.debian.org ist nicht auflösbar. DNS/Netzwerk prüfen."
+    die "deb.debian.org ist nicht aufloesbar. DNS/Netzwerk pruefen."
   fi
+  log "Internet: OK"
 }
 
 random_password() {
@@ -97,9 +98,25 @@ random_password() {
 
 prompt_secrets() {
   if [[ -z "$ADMIN_PASSWORD" ]]; then
-    read -rsp "Passwort für Admin-User '${ADMIN_USERNAME}': " ADMIN_PASSWORD
-    echo
-    [[ -n "$ADMIN_PASSWORD" ]] || die "Admin-Passwort darf nicht leer sein."
+    printf '\n'
+    printf 'Der Admin-User wird fuer den Login in die Web-UI benutzt.\n'
+    printf 'Hinweis: Die Eingabe ist unsichtbar (keine Sternchen). Bestaetigen mit Enter.\n\n'
+    while true; do
+      read -rsp "Passwort fuer Admin-User '${ADMIN_USERNAME}' (min. 6 Zeichen): " ADMIN_PASSWORD
+      printf '\n'
+      if [[ ${#ADMIN_PASSWORD} -lt 6 ]]; then
+        warn "Passwort zu kurz. Bitte erneut eingeben."
+        continue
+      fi
+      read -rsp "Passwort wiederholen: " ADMIN_PASSWORD_CONFIRM
+      printf '\n'
+      if [[ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]]; then
+        warn "Passwoerter stimmen nicht ueberein. Bitte erneut eingeben."
+        continue
+      fi
+      break
+    done
+    unset ADMIN_PASSWORD_CONFIRM
   fi
   if [[ -z "$DB_PASSWORD" ]]; then
     DB_PASSWORD="$(random_password)"
@@ -340,10 +357,22 @@ summary() {
   fi
 }
 
+banner() {
+  printf '\n'
+  printf '\033[1;36m==============================================================\033[0m\n'
+  printf '\033[1;36m  Preisoptimierung - Debian 12 Installer\033[0m\n'
+  printf '\033[1;36m==============================================================\033[0m\n'
+  printf '  Zielverzeichnis: %s\n' "$APP_DIR"
+  printf '  Reverse-Proxy:   %s\n' "$( $WITH_NGINX && echo 'nginx (Port 80)' || echo 'aus (uvicorn :8000 direkt)' )"
+  printf '  Seed-Daten:      %s\n' "$( $SKIP_SEED && echo 'uebersprungen' || echo 'Admin + Mock-Produkte' )"
+  printf '\n'
+}
+
 main() {
+  banner
   require_debian_12
-  require_internet
   prompt_secrets
+  require_internet
   install_packages
   configure_dns
   ensure_app_user
