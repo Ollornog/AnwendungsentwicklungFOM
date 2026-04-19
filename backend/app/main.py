@@ -17,7 +17,11 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=settings.session_secret,
     same_site="lax",
-    https_only=settings.app_env == "production",
+    # Prototyp laeuft per ADR 0005 ueber HTTP auf Port 80 – ein Secure-Flag
+    # wuerde den Browser das Cookie verwerfen lassen und den Login in eine
+    # Redirect-Schleife schicken. Fuer eine spaetere HTTPS-Bereitstellung
+    # hier auf True setzen.
+    https_only=False,
     max_age=60 * 60 * 8,
 )
 
