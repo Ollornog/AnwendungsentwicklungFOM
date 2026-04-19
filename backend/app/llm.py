@@ -202,7 +202,6 @@ def _strategy_prompt(
         )
     else:  # formula
         vars_list = ", ".join(_ALLOWED_FORMULA_VARS)
-        funcs_list = ", ".join(_ALLOWED_FORMULA_FUNCS)
         base += (
             "\nSchlage eine Preisformel vor. Erlaubte Variablen: "
             f"{vars_list}. "
@@ -211,13 +210,24 @@ def _strategy_prompt(
             "< <= > >= == != (ein Vergleich ergibt 1 oder 0 und kann "
             "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag "
             "oder `(weekday == 7) * 3` als Sonntagsaufschlag). "
-            f"Erlaubte Funktionen: {funcs_list}. "
+            "Logische Verknuepfungen: `and`, `or`, `not` (Python-Stil).\n"
+            "Erlaubte Funktionen (mit Signatur):\n"
+            "  sqrt(x)         – Quadratwurzel\n"
+            "  pow(x, y)       – x hoch y (aequivalent zu x ** y)\n"
+            "  abs(x)          – Betrag\n"
+            "  min(a, b, ...)  – kleinster Wert (mind. 1 Argument)\n"
+            "  max(a, b, ...)  – groesster Wert (mind. 1 Argument)\n"
+            "  round(x, n)     – auf n Nachkommastellen; n ist optional (Default 0)\n"
+            "  floor(x)        – auf ganze Zahl abrunden\n"
+            "  ceil(x)         – auf ganze Zahl aufrunden\n"
             "Keine weiteren Funktionsaufrufe, keine Zuweisungen.\n"
-            "Wichtig: Wenn du auf den Lagerbestand reagierst, druecke das "
-            "moeglichst prozentual ueber `stock / start_stock` aus "
-            "(z. B. `(stock / start_stock < 0.2) * 3` als Niedrig-Lager-"
-            "Aufschlag), statt harter absoluter Schwellen. Das macht die "
-            "Formel unabhaengig von der konkreten Stueckzahl.\n"
+            "Best Practices:\n"
+            " - Wenn du auf den Lagerbestand reagierst, druecke das "
+            "prozentual ueber `stock / start_stock` aus (z. B. "
+            "`(stock / start_stock < 0.2) * 3` als Niedrig-Lager-Aufschlag), "
+            "statt harter absoluter Schwellen.\n"
+            " - Wickel die finale Formel in `round(..., 2)`, damit der "
+            "berechnete Preis immer zwei Nachkommastellen hat.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '
             '"<kurz, max 2 Saetze>"}. Kein Freitext drum herum.'
         )

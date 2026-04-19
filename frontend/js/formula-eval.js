@@ -62,12 +62,21 @@
       const n = Number(v);
       return Number.isFinite(n) ? n : 0;
     });
+    // Python-Stil `and` / `or` / `not` in JS-Syntax uebersetzen, damit eine
+    // von der KI vorgeschlagene Formel (der Backend-Evaluator kennt ast.BoolOp
+    // und erlaubt diese Schluesselwoerter) auch in der Live-Preview laeuft.
+    // `\b` stellt sicher, dass Variablen-/Funktionsnamen wie `round` oder
+    // `standard` (haette ein "and" als Teilstring) unberuehrt bleiben.
+    const jsExpr = expression
+      .replace(/\band\b/g, '&&')
+      .replace(/\bor\b/g, '||')
+      .replace(/\bnot\b/g, '!');
     // Reihenfolge: Funktionen zuerst, dann Variablen (entspricht der Parameter-
     // reihenfolge im new Function-Aufruf).
     const fn = new Function(
       ...FUNC_NAMES,
       ...ALLOWED_VARS,
-      `"use strict"; return (${expression});`,
+      `"use strict"; return (${jsExpr});`,
     );
     return fn(...FUNC_VALUES, ...values);
   }
