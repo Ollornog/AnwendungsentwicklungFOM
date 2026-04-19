@@ -12,87 +12,44 @@
     <ul><li><strong>Preisoptimierung</strong></li></ul>
     <ul>
       <li><a href="/pages/products.html">Produkte</a></li>
+      <li><a href="/pages/settings.html">Einstellungen</a></li>
       <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
     </ul>
   </nav>
 
   <main class="container" x-data="productsApp()" x-init="load()">
-    <h1>Produkte</h1>
 
-    <!-- Globale Simulation: Uhrzeit + Tag. Formeln koennen diese Werte nutzen. -->
-    <article>
-      <h2>Simulation</h2>
-      <div class="grid">
-        <label>
-          Stunde: <strong x-text="String(sim.hour).padStart(2,'0') + ':00'"></strong>
-          <input type="range" min="0" max="23" x-model.number="sim.hour">
-        </label>
-        <label>
-          Tag im Monat: <strong x-text="sim.day"></strong>
-          <input type="range" min="1" max="31" x-model.number="sim.day">
-        </label>
-      </div>
-      <small class="muted">
-        Tick-Interval: alle 2 s wird der aktuelle Lagerbestand pro Produkt um
-        den eingestellten Verbrauch reduziert. Bei 0 füllt er auf den
-        Startbestand auf.
-      </small>
-    </article>
+    <!-- Schmale Sim-Leiste oben -->
+    <div class="sim-bar">
+      <label>
+        <span class="muted">Stunde</span>
+        <input type="range" min="0" max="23" x-model.number="sim.hour">
+        <strong x-text="String(sim.hour).padStart(2,'0') + ':00'"></strong>
+      </label>
+      <label>
+        <span class="muted">Tag</span>
+        <input type="range" min="1" max="31" x-model.number="sim.day">
+        <strong x-text="sim.day"></strong>
+      </label>
+      <small class="muted" style="margin-left:auto">Tick 2 s · 0 → Refill</small>
+    </div>
 
-    <!-- Produkt-Anlegen-Formular -->
-    <article x-data="productForm((p) => $dispatch('product-created', p))">
-      <h2>Produkt anlegen</h2>
-      <form @submit.prevent="submit">
-        <div class="grid">
-          <label>Name <input type="text" x-model="name" required></label>
-          <label>Kategorie <input type="text" x-model="category" required></label>
-        </div>
-        <div class="grid">
-          <label>Einkaufspreis (EUR)
-            <input type="number" step="0.01" min="0" x-model="cost_price" required>
-          </label>
-          <label>Wettbewerbspreis (EUR, optional)
-            <input type="number" step="0.01" min="0" x-model="competitor_price">
-          </label>
-          <label>Nachfrage pro Monat
-            <input type="number" min="0" step="1" x-model="monthly_demand">
-          </label>
-        </div>
-        <div class="grid">
-          <label>Startbestand (Lager)
-            <input type="number" min="0" step="1" x-model="stock" required>
-          </label>
-          <label>Verbrauch pro Tick
-            <input type="number" min="0" step="1" x-model="daily_usage">
-          </label>
-        </div>
-        <label>Kontext (Produkt, Wettbewerb, Zielgruppe …)
-          <textarea rows="3" x-model="context"
-            placeholder="Beispiel: Klassischer Sneaker fuer den Alltag; Wettbewerber zwischen 50 und 80 EUR; Zielgruppe preisbewusst."></textarea>
-        </label>
-        <button type="submit" :disabled="loading" :aria-busy="loading">Anlegen</button>
-        <small class="error" x-show="error" x-text="error"></small>
-      </form>
-    </article>
-
-    <!-- Produkt-Liste mit Live-Preis und Simulation pro Zeile -->
-    <article
-      @product-created.window="onProductCreated($event.detail)"
-      @strategy-saved.window="onStrategySaved($event.detail)">
-      <h2>Liste</h2>
+    <!-- Produkt-Liste -->
+    <div @product-created.window="onProductCreated($event.detail)"
+         @strategy-saved.window="onStrategySaved($event.detail)">
       <p x-show="loading" aria-busy="true">Lade…</p>
-      <p x-show="!loading && products.length === 0" class="muted">Noch keine Produkte.</p>
+      <p x-show="!loading && products.length === 0" class="muted">
+        Noch keine Produkte. Klick auf das <strong>+</strong> rechts unten.
+      </p>
       <div style="overflow-x:auto" x-show="products.length > 0">
-        <table>
+        <table class="compact">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Kategorie</th>
+              <th>Produkt</th>
               <th>EK</th>
               <th>Wettb.</th>
-              <th>Nachfr./Mon</th>
-              <th>Lager (aktuell / Start)</th>
-              <th>Verbrauch/Tick</th>
+              <th>Lager (akt./Start)</th>
+              <th>Verbr.</th>
               <th>Strategie</th>
               <th>Verkaufspreis</th>
               <th></th>
@@ -101,32 +58,26 @@
           <tbody>
             <template x-for="p in products" :key="p.id">
               <tr>
-                <td x-text="p.name"></td>
-                <td x-text="p.category"></td>
+                <td>
+                  <strong x-text="p.name"></strong>
+                  <br><small class="muted" x-text="p.category"></small>
+                </td>
                 <td x-text="formatEur(p.cost_price)"></td>
                 <td x-text="p.competitor_price != null ? formatEur(p.competitor_price) : '—'"></td>
-                <td x-text="p.monthly_demand ?? 0"></td>
-                <td>
+                <td style="min-width:9rem">
                   <input type="range" min="0" :max="Math.max(1, p.stock)" x-model.number="p._current_stock">
-                  <small><strong x-text="p._current_stock"></strong> / <span x-text="p.stock"></span></small>
+                  <small><span x-text="p._current_stock"></span> / <span x-text="p.stock"></span></small>
                 </td>
-                <td>
-                  <input type="range" min="0" max="20" x-model.number="p._usage" style="max-width:7rem">
+                <td style="min-width:6rem">
+                  <input type="range" min="0" max="20" x-model.number="p._usage">
                   <small x-text="p._usage"></small>
                 </td>
-                <td>
-                  <span x-text="strategyLabel(p)"></span>
-                </td>
-                <td>
-                  <strong x-text="formatPrice(priceFor(p))"></strong>
-                  <template x-if="p.strategy && (p.strategy.kind === 'rule' || p.strategy.kind === 'llm')">
-                    <br><small class="muted">(nur via „Preis berechnen")</small>
-                  </template>
-                </td>
-                <td>
-                  <button class="outline" @click="openStrategyModal(p)">Preis berechnen</button>
-                  <button class="secondary outline" @click="computeAndConfirm(p)" title="Aktuellen Preis in die Historie schreiben">In Historie</button>
-                  <a :href="`/pages/history.html?id=${p.id}`" role="button" class="secondary outline">Historie</a>
+                <td><small x-text="strategyLabel(p)"></small></td>
+                <td class="price" x-text="formatPrice(priceFor(p))"></td>
+                <td class="actions">
+                  <button class="outline" @click="openStrategyModal(p)" title="Preis-Strategie festlegen">Preis</button>
+                  <button class="secondary outline" @click="computeAndConfirm(p)" title="Aktuellen Preis in die Historie schreiben">↳ Hist.</button>
+                  <a :href="`/pages/history.html?id=${p.id}`" role="button" class="secondary outline">📜</a>
                 </td>
               </tr>
             </template>
@@ -134,26 +85,76 @@
         </table>
       </div>
       <small class="error" x-show="error" x-text="error"></small>
-    </article>
+    </div>
 
-    <!-- Modal: Preis-Strategie festlegen -->
+    <!-- Floating Action Button: Produkt anlegen -->
+    <button class="fab"
+            @click="window.dispatchEvent(new CustomEvent('open-create-modal'))"
+            title="Produkt anlegen"
+            aria-label="Produkt anlegen">+</button>
+
+    <!-- Anlegen-Modal -->
+    <div x-data="productCreateModal()"
+         @open-create-modal.window="show()"
+         x-show="open"
+         x-cloak
+         class="modal-backdrop">
+      <article>
+        <header><strong>Produkt anlegen</strong></header>
+        <form @submit.prevent="submit">
+          <div class="grid">
+            <label>Name <input type="text" x-model="name" required></label>
+            <label>Kategorie <input type="text" x-model="category" required></label>
+          </div>
+          <div class="grid">
+            <label>Einkaufspreis (EUR)
+              <input type="number" step="0.01" min="0" x-model="cost_price" required>
+            </label>
+            <label>Wettbewerbspreis (EUR)
+              <input type="number" step="0.01" min="0" x-model="competitor_price">
+            </label>
+            <label>Nachfrage / Monat
+              <input type="number" min="0" step="1" x-model="monthly_demand">
+            </label>
+          </div>
+          <div class="grid">
+            <label>Startbestand
+              <input type="number" min="0" step="1" x-model="stock" required>
+            </label>
+            <label>Verbrauch / Tick
+              <input type="number" min="0" step="1" x-model="daily_usage">
+            </label>
+          </div>
+          <label>Kontext (für KI-Vorschlag)
+            <textarea rows="3" x-model="context"
+              placeholder="Produkt, Wettbewerb, Zielgruppe, Tagesprofil …"></textarea>
+          </label>
+          <small class="error" x-show="error" x-text="error"></small>
+          <footer>
+            <button type="button" class="secondary" @click="cancel()">Abbrechen</button>
+            <button type="submit" :disabled="loading" :aria-busy="loading">Anlegen</button>
+          </footer>
+        </form>
+      </article>
+    </div>
+
+    <!-- Preis-Strategie-Modal -->
     <div x-data="priceStrategyModal()"
          @open-strategy-modal.window="openFor($event.detail)"
          x-show="open"
-         style="position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1000"
-         x-cloak>
-      <article style="max-width:640px; width:92%; max-height:90vh; overflow:auto">
+         x-cloak
+         class="modal-backdrop">
+      <article>
         <header>
           <strong>Preis festlegen:</strong> <span x-text="product?.name"></span>
         </header>
 
         <fieldset>
-          <legend>Typ</legend>
           <label>
             <input type="radio" value="fix" x-model="target"> Fixpreis
           </label>
           <label>
-            <input type="radio" value="formula" x-model="target"> Formel (mit Variablen)
+            <input type="radio" value="formula" x-model="target"> Formel
           </label>
         </fieldset>
 
@@ -166,29 +167,25 @@
         <div x-show="target === 'formula'">
           <label>Formel
             <input type="text" x-model="expression"
-                   placeholder="z. B. cost_price * 1.8 + (hour > 18) * 0">
+                   placeholder="z. B. cost_price * 1.8 + (hour >= 18) * 2">
           </label>
           <small class="muted">
-            Erlaubte Variablen: cost_price, competitor_price, monthly_demand,
-            start_stock, stock, usage, hour, day.
-            Operatoren: + − * / ** % ( ).
+            Variablen: cost_price · competitor_price · monthly_demand · start_stock ·
+            stock · usage · hour · day. Operatoren: + − * / ** % ( ).
           </small>
         </div>
 
         <fieldset>
-          <label>
-            <input type="checkbox" x-model="useAi"> Per KI vorschlagen
-          </label>
+          <label><input type="checkbox" x-model="useAi"> Per KI vorschlagen</label>
           <label x-show="useAi" style="margin-left:1.5rem">
-            <input type="checkbox" x-model="online"> Online recherchieren (Wettbewerbspreise)
+            <input type="checkbox" x-model="online"> Online recherchieren
           </label>
           <div x-show="useAi">
-            <button class="secondary" @click="askAi()" :disabled="aiLoading" :aria-busy="aiLoading">
-              KI fragen
-            </button>
+            <button type="button" class="secondary"
+                    @click="askAi()" :disabled="aiLoading" :aria-busy="aiLoading">KI fragen</button>
             <p x-show="aiReasoning" class="muted">
-              <strong>KI-Vorschlag:</strong> <span x-text="aiReasoning"></span>
-              <br><em>(Human-in-the-Loop: Vorschlag erst durch „Speichern" aktiv.)</em>
+              <span class="badge-ai">KI</span>
+              <span x-text="aiReasoning"></span>
             </p>
           </div>
         </fieldset>
@@ -196,8 +193,8 @@
         <small class="error" x-show="error" x-text="error"></small>
 
         <footer>
-          <button class="secondary" @click="cancel()">Abbrechen</button>
-          <button @click="save()" :disabled="saving" :aria-busy="saving">Speichern</button>
+          <button type="button" class="secondary" @click="cancel()">Abbrechen</button>
+          <button type="button" @click="save()" :disabled="saving" :aria-busy="saving">Speichern</button>
         </footer>
       </article>
     </div>
@@ -206,7 +203,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/store.js"></script>
   <script src="/js/formula-eval.js"></script>
-  <script src="/js/components/product-form.js"></script>
+  <script src="/js/components/product-create-modal.js"></script>
   <script src="/js/components/price-strategy-modal.js"></script>
   <script>
     function productsApp() {
@@ -271,16 +268,15 @@
           };
         },
 
-        // Live-Preis: nur fix und formula lassen sich im Browser auswerten.
-        // rule und llm muessen ueber /price den Backend-Pfad nehmen.
+        // Live-Preis: nur fix und formula sind im Browser auswertbar.
         priceFor(p) {
           if (!p.strategy) return null;
-          const kind = p.strategy.kind;
-          if (kind === 'fix') {
+          const k = p.strategy.kind;
+          if (k === 'fix') {
             const a = Number(p.strategy.config?.amount);
             return Number.isFinite(a) ? a : null;
           }
-          if (kind === 'formula') {
+          if (k === 'formula') {
             try {
               const v = window.evaluateFormula(p.strategy.config?.expression || '', this.varsFor(p));
               return Number.isFinite(v) ? v : null;
@@ -292,24 +288,17 @@
         },
 
         strategyLabel(p) {
-          if (!p.strategy) return '— keine —';
-          const k = p.strategy.kind;
-          if (k === 'fix') return 'Fix';
-          if (k === 'formula') return 'Formel';
-          if (k === 'rule') return 'Regel';
-          if (k === 'llm') return 'LLM';
-          return k;
+          if (!p.strategy) return '—';
+          return ({ fix: 'Fix', formula: 'Formel', rule: 'Regel', llm: 'LLM' })[p.strategy.kind] || p.strategy.kind;
         },
 
         openStrategyModal(p) {
           window.dispatchEvent(new CustomEvent('open-strategy-modal', { detail: p }));
         },
 
-        // Ruft Backend-Berechnung + Confirm auf, um den aktuellen Preis in
-        // die History zu schreiben (mit aktuellem Sim-Kontext).
         async computeAndConfirm(p) {
           if (!p.strategy) {
-            this.error = 'Keine Strategie konfiguriert – erst „Preis berechnen" nutzen.';
+            this.error = 'Keine Strategie konfiguriert – erst „Preis" nutzen.';
             return;
           }
           this.error = '';

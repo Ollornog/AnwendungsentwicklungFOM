@@ -63,14 +63,19 @@ done
 # runuser ist Teil von util-linux und damit auf jedem Debian verfügbar,
 # auch wenn sudo nicht installiert ist. Wir nutzen es überall, wo wir in
 # einen anderen User wechseln müssen.
+#
+# `cd /tmp` davor, weil das Skript meist aus einem von root angelegten
+# Clone-Verzeichnis (z. B. /root/...) gestartet wird, in das System-User
+# wie `postgres` keinen Lesezugriff haben. Ohne den cd schreibt psql
+# ein 'could not change directory'-Warnung pro Aufruf in den Output.
 as_user() {
   local target_user="$1"; shift
-  runuser -u "$target_user" -- "$@"
+  (cd /tmp && runuser -u "$target_user" -- "$@")
 }
 
 as_user_shell() {
   local target_user="$1"; shift
-  runuser -u "$target_user" -- bash -c "$*"
+  (cd /tmp && runuser -u "$target_user" -- bash -c "$*")
 }
 
 require_debian_12() {

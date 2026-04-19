@@ -9,6 +9,7 @@ from app.db import get_db
 from app.deps import get_current_user
 from app.llm import LLMResponseError, LLMUnavailableError, suggest_strategy
 from app.models import PricingStrategy, Product, User
+from app.services import app_settings as app_settings_svc
 from app.schemas import (
     ProductCreate,
     ProductList,
@@ -133,8 +134,9 @@ def suggest_strategy_endpoint(
 ) -> StrategySuggestResponse:
     product = _get_owned_product(db, user, product_id)
     whitelist = _strategy_whitelist(product)
+    api_key = app_settings_svc.gemini_api_key(db)
     try:
-        result = suggest_strategy(payload.target, payload.online, whitelist)
+        result = suggest_strategy(payload.target, payload.online, whitelist, api_key=api_key)
     except LLMUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMResponseError as exc:

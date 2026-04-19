@@ -113,6 +113,23 @@ class StrategySuggestResponse(BaseModel):
     reasoning: str
 
 
+class AppSettingsOut(BaseModel):
+    """Read-only Sicht auf Laufzeit-Einstellungen.
+
+    `gemini_api_key_set` zeigt nur, ob ein Key hinterlegt ist – nie den
+    Klartext. `gemini_api_key_source` macht transparent, wo der aktuell
+    aktive Key herkommt (DB-Override vs. Env aus .env).
+    """
+
+    gemini_api_key_set: bool
+    gemini_api_key_source: Literal["db", "env", "none"]
+
+
+class AppSettingsUpdate(BaseModel):
+    # None = unveraendert lassen; "" = loeschen (zurueck auf Env-Default).
+    gemini_api_key: str | None = None
+
+
 class HistoryItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.routers import auth as auth_router
 from app.routers import pricing as pricing_router
 from app.routers import products as products_router
+from app.routers import settings as settings_router
 
 settings = get_settings()
 
@@ -28,6 +29,7 @@ app.add_middleware(
 app.include_router(auth_router.router, prefix="/api/v1")
 app.include_router(products_router.router, prefix="/api/v1")
 app.include_router(pricing_router.router, prefix="/api/v1")
+app.include_router(settings_router.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health", tags=["meta"])

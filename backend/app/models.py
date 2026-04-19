@@ -112,6 +112,23 @@ class PriceHistory(Base):
     )
 
 
+class AppSetting(Base):
+    """Laufzeit-Einstellungen, vom Admin per UI veraenderbar.
+
+    Der Wert hat Vorrang vor der gleichnamigen Env-Variable
+    (z. B. GEMINI_API_KEY), wenn er gesetzt ist. Damit kann der
+    Demo-API-Key gewechselt werden, ohne den Service neu zu starten.
+    """
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class PriceSuggestion(Base):
     __tablename__ = "price_suggestions"
 

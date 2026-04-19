@@ -18,14 +18,14 @@ def _whitelist(product: Product) -> dict:
     }
 
 
-def compute(product: Product, config: dict) -> SuggestionResult:
+def compute(product: Product, config: dict, api_key: str | None = None) -> SuggestionResult:
     template = config.get("prompt_template")
     if not isinstance(template, str) or not template.strip():
         raise StrategyError("LLM-Strategie benötigt 'prompt_template'")
 
     whitelist = _whitelist(product)
     try:
-        suggestion = suggest_price(template, whitelist)
+        suggestion = suggest_price(template, whitelist, api_key=api_key)
     except LLMUnavailableError as exc:
         raise StrategyError(f"LLM nicht verfügbar: {exc}") from exc
     except LLMResponseError as exc:

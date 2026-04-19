@@ -18,6 +18,7 @@ from app.schemas import (
     PriceRequest,
     PriceSuggestionOut,
 )
+from app.services import app_settings as app_settings_svc
 from app.strategies import StrategyError, compute_price
 
 router = APIRouter(prefix="/products/{product_id}", tags=["pricing"])
@@ -42,8 +43,11 @@ def request_price(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Keine Strategie konfiguriert")
 
     runtime = payload.model_dump(exclude_none=True) if payload is not None else None
+    api_key = app_settings_svc.gemini_api_key(db) if product.strategy.kind == "llm" else None
     try:
-        result = compute_price(product, product.strategy.kind, product.strategy.config, runtime)
+        result = compute_price(
+            product, product.strategy.kind, product.strategy.config, runtime, api_key=api_key
+        )
     except StrategyError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 

@@ -74,12 +74,19 @@ def _load_genai():
     return genai
 
 
-def _generate(prompt: str, *, online: bool, as_json: bool) -> str:
+def _generate(
+    prompt: str,
+    *,
+    online: bool,
+    as_json: bool,
+    api_key: str | None = None,
+) -> str:
     settings = get_settings()
-    if not settings.gemini_api_key:
+    effective_key = api_key if api_key else settings.gemini_api_key
+    if not effective_key:
         raise LLMUnavailableError("GEMINI_API_KEY ist nicht gesetzt")
     genai = _load_genai()
-    genai.configure(api_key=settings.gemini_api_key)
+    genai.configure(api_key=effective_key)
 
     # Google-Search-Grounding fuer den Online-Modus.
     # Die Tool-API hat sich zwischen Gemini-Modellen geaendert; wir
@@ -108,9 +115,13 @@ def _generate(prompt: str, *, online: bool, as_json: bool) -> str:
     return text
 
 
-def suggest_price(prompt_template: str, whitelist: dict[str, Any]) -> LLMSuggestion:
+def suggest_price(
+    prompt_template: str,
+    whitelist: dict[str, Any],
+    api_key: str | None = None,
+) -> LLMSuggestion:
     prompt = _build_prompt(prompt_template, whitelist)
-    text = _generate(prompt, online=False, as_json=True)
+    text = _generate(prompt, online=False, as_json=True, api_key=api_key)
     payload = _parse_json(text)
 
     price_raw = payload.get("price")
@@ -201,11 +212,12 @@ def suggest_strategy(
     target: str,
     online: bool,
     whitelist: dict[str, Any],
+    api_key: str | None = None,
 ) -> LLMStrategySuggestion:
     if target not in ("fix", "formula"):
         raise LLMResponseError(f"Unbekanntes Ziel: {target}")
     prompt = _strategy_prompt(target, online, whitelist)
-    text = _generate(prompt, online=online, as_json=True)
+    text = _generate(prompt, online=online, as_json=True, api_key=api_key)
     payload = _parse_json(text)
     reasoning = str(payload.get("reasoning", ""))[:500]
 

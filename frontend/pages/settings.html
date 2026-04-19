@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Einstellungen – Preisoptimierung</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <nav class="container">
+    <ul><li><strong>Preisoptimierung</strong></li></ul>
+    <ul>
+      <li><a href="/pages/products.html">Produkte</a></li>
+      <li><a href="/pages/settings.html">Einstellungen</a></li>
+      <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
+    </ul>
+  </nav>
+
+  <main class="container" x-data="settingsApp()" x-init="load()">
+    <h1>Einstellungen</h1>
+
+    <article>
+      <header><strong>Google Gemini API-Key</strong></header>
+
+      <p class="muted" x-show="!loading">
+        Status:
+        <span x-show="status.gemini_api_key_source === 'db'">
+          <strong>aktiv</strong> (per UI hinterlegt)
+        </span>
+        <span x-show="status.gemini_api_key_source === 'env'">
+          <strong>aktiv</strong> (über <code>.env</code>)
+        </span>
+        <span x-show="status.gemini_api_key_source === 'none'">
+          <strong>nicht gesetzt</strong> – LLM-Strategie und KI-Vorschläge schlagen fehl
+        </span>
+      </p>
+
+      <form @submit.prevent="save">
+        <label>Neuer API-Key
+          <input type="password" x-model="apiKey"
+                 placeholder="AIza…"
+                 autocomplete="off"
+                 spellcheck="false">
+        </label>
+        <small class="muted">
+          Wird in der Datenbank gespeichert und überschreibt den
+          <code>GEMINI_API_KEY</code> aus der <code>.env</code>. Eingabe leer
+          lassen und „Aus DB entfernen" klicken, um wieder den .env-Wert zu nutzen.
+        </small>
+
+        <small class="error" x-show="error" x-text="error"></small>
+        <small x-show="saved" style="color:green">Gespeichert.</small>
+
+        <footer>
+          <button type="button" class="secondary" @click="clearKey()"
+                  :disabled="loading">Aus DB entfernen</button>
+          <button type="submit" :disabled="loading || !apiKey"
+                  :aria-busy="loading">Speichern</button>
+        </footer>
+      </form>
+    </article>
+
+    <article>
+      <header><strong>Hinweise</strong></header>
+      <ul style="font-size:0.9rem">
+        <li>Der Key wird ausschließlich serverseitig benutzt (Backend &rarr; Gemini), nie an den Browser zurückgespielt.</li>
+        <li>Beim Auslesen über diese Seite wird der Key NICHT angezeigt – nur, ob einer hinterlegt ist und woher er kommt.</li>
+        <li>Quelle: Google AI Studio &rarr; <em>Get API key</em>.</li>
+      </ul>
+    </article>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/store.js"></script>
+  <script>
+    function settingsApp() {
+      return {
+        loading: false,
+        saving: false,
+        saved: false,
+        error: '',
+        apiKey: '',
+        status: { gemini_api_key_set: false, gemini_api_key_source: 'none' },
+
+        async load() {
+          this.loading = true;
+          this.error = '';
+          try {
+            this.status = await window.api.get('/settings');
+          } catch (e) {
+            this.error = e.message;
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async save() {
+          if (!this.apiKey) return;
+          this.saving = true;
+          this.saved = false;
+          this.error = '';
+          try {
+            this.status = await window.api.put('/settings', {
+              gemini_api_key: this.apiKey,
+            });
+            this.apiKey = '';
+            this.saved = true;
+            setTimeout(() => { this.saved = false; }, 3000);
+          } catch (e) {
+            this.error = e.message;
+          } finally {
+            this.saving = false;
+          }
+        },
+
+        async clearKey() {
+          this.saving = true;
+          this.saved = false;
+          this.error = '';
+          try {
+            this.status = await window.api.put('/settings', { gemini_api_key: '' });
+            this.apiKey = '';
+            this.saved = true;
+            setTimeout(() => { this.saved = false; }, 3000);
+          } catch (e) {
+            this.error = e.message;
+          } finally {
+            this.saving = false;
+          }
+        },
+      };
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

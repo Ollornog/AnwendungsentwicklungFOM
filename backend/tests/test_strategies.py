@@ -91,7 +91,7 @@ def test_unknown_strategy_raises():
 def test_llm_strategy_uses_monkeypatched_client(monkeypatch):
     captured = {}
 
-    def fake_suggest(template, whitelist):
+    def fake_suggest(template, whitelist, api_key=None):
         captured["template"] = template
         captured["whitelist"] = whitelist
         from app.llm import LLMSuggestion
@@ -121,7 +121,7 @@ def test_llm_strategy_uses_monkeypatched_client(monkeypatch):
 def test_llm_strategy_propagates_unavailable(monkeypatch):
     from app.llm import LLMUnavailableError
 
-    def fake_suggest(template, whitelist):
+    def fake_suggest(template, whitelist, api_key=None):
         raise LLMUnavailableError("kein key")
 
     monkeypatch.setattr("app.strategies.llm.suggest_price", fake_suggest)
@@ -134,7 +134,7 @@ def test_llm_strategy_propagates_unavailable(monkeypatch):
 def test_llm_strategy_propagates_response_error(monkeypatch):
     from app.llm import LLMResponseError
 
-    def fake_suggest(template, whitelist):
+    def fake_suggest(template, whitelist, api_key=None):
         raise LLMResponseError("kaputtes JSON")
 
     monkeypatch.setattr("app.strategies.llm.suggest_price", fake_suggest)
