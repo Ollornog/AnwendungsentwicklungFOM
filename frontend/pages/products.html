@@ -181,7 +181,7 @@
             <input type="text" x-model="expression" x-ref="expressionInput"
                    placeholder="z. B. cost_price * 1.8 + (hour >= 18) * 2">
           </label>
-          <template x-for="g in tokenGroups" :key="g.kind">
+          <template x-for="g in tokenGroups" :key="g.label">
             <div class="token-bar">
               <small class="token-label muted" x-text="g.label"></small>
               <template x-for="t in g.tokens" :key="t.label">
