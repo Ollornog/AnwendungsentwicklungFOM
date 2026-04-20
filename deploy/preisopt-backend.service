@@ -23,9 +23,10 @@ RestartSec=3
 NoNewPrivileges=false
 PrivateTmp=true
 ProtectHome=true
-# ProtectSystem=full: /usr, /boot, /efi read-only; /etc darf beschrieben
-# werden, damit certbot die nginx-Site modifizieren kann.
-ProtectSystem=full
+# ProtectSystem=true: /usr, /boot, /efi read-only; /etc BLEIBT
+# schreibbar, damit certbot die nginx-Site aktualisieren kann.
+# (Achtung: `full` macht /etc read-only und bricht HTTPS-Enable.)
+ProtectSystem=true
 
 [Install]
 WantedBy=multi-user.target
