@@ -2,6 +2,15 @@
 
 Studentisches Semesterprojekt der FOM Hochschule, Modul Anwendungsentwicklung.
 
+Ein Web-Tool, in dem Shop-Betreiberinnen und Shop-Betreiber Produkte pflegen
+und pro Produkt eine Preisstrategie wählen (Fixpreis, Formel, Regel,
+LLM-Vorschlag). Die Preisberechnung läuft gegen einen Live-Simulator
+(Uhrzeit, Wochentag, Lagerbestand, Nachfrage) und jede Berechnung landet
+in einer append-only Preis-Historie.
+
+Die Anwendung ist ein **Prototyp mit Mock-Daten** – keine echten
+Endkundendaten, keine Shop-Anbindung, keine produktive Preisfestlegung.
+
 ## Quick Start auf Debian 12
 
 ```bash
@@ -12,16 +21,7 @@ cd AnwendungsentwicklungFOM
 ./install.sh
 ```
 
-Ein Web-Tool, in dem Shop-Betreiberinnen und Shop-Betreiber Produkte pflegen
-und pro Produkt eine Preisstrategie wählen (Fixpreis, Formel, Regel,
-LLM-Vorschlag). Die Preisberechnung läuft gegen einen Live-Simulator
-(Uhrzeit, Wochentag, Lagerbestand, Nachfrage) und jede Berechnung landet
-in einer append-only Preis-Historie.
-
-Die Anwendung ist ein **Prototyp mit Mock-Daten** – keine echten
-Endkundendaten, keine Shop-Anbindung, keine produktive Preisfestlegung.
-
-## Funktionsweise in 60 Sekunden
+## Funktionsweise
 
 1. **Einloggen** als `admin` oder als Teammitglied (vier Demo-Accounts
    werden beim Seed angelegt).
