@@ -20,16 +20,16 @@ Für die Abschluss-Demo soll der Prototyp auf einem Debian-12-Server laufen. Gef
 - Debian 12 ist Standard in der Hochschulumgebung und bietet stabile Pakete.
 - Python 3.11 genügt für unseren Stack (FastAPI, SQLAlchemy 2.x, Pydantic 2.x). 3.12 wäre nur marginal besser, brächte aber Zusatzaufwand (Build aus Quelle oder Drittanbieter-Repo).
 - nginx + uvicorn ist das übliche Muster in Produktion und hält SSL-/Header-Handling aus dem App-Code heraus.
-- systemd-Unit mit `NoNewPrivileges`, `ProtectSystem=strict`, `PrivateTmp` und separatem System-User reduziert die Angriffsfläche auch für den Prototyp.
+- systemd-Unit mit separatem System-User, `PrivateTmp`, `ProtectHome` und `ProtectSystem=true` reduziert die Angriffsfläche. `NoNewPrivileges` bleibt bewusst deaktiviert, weil das Feature „HTTPS per Klick" einen sauber abgegrenzten sudo-Aufruf nutzt – die erlaubte Privilegierung ist über `/etc/sudoers.d/preisopt` auf genau ein Binary begrenzt.
 - Alle Secrets in `/opt/preisopt/.env` (Mode 640, Owner `preisopt`), nie im Git.
 
 ## Konsequenzen
 - `.env` wird vom `install.sh` beim ersten Lauf erzeugt, `SESSION_SECRET` zufällig befüllt.
 - Wiederholte Läufe des Skripts aktualisieren Code und Migrationen, ohne Daten zu verwerfen.
-- Das Skript nutzt `runuser` (Teil von `util-linux`, immer vorhanden) statt `sudo` — läuft damit auch auf minimalen Debian-Images, auf denen `sudo` nicht installiert ist.
+- Der Installer nutzt `runuser` (Teil von `util-linux`, immer vorhanden), um interne Schritte unter dem `postgres`- bzw. `preisopt`-User laufen zu lassen. `sudo` selbst installiert das Skript zusätzlich – es wird aber nur vom Backend-Service für das HTTPS-Helper-Skript benötigt, nicht im Installer-Ablauf.
 - DNS wird über `systemd-resolved` persistent auf `1.1.1.1` und `8.8.8.8` festgenagelt (Drop-in `/etc/systemd/resolved.conf.d/preisopt-dns.conf`, `/etc/resolv.conf` als Symlink auf den Stub-Resolver). `systemd-resolved` ist enabled, die Einstellung gilt damit auch nach jedem Reboot.
 - Bei Bedarf kann das Team später auf Container / Compose umsteigen; bis dahin ist das Shell-Skript gut lesbar und ohne Zusatztooling.
-- **HTTP-only, bewusst.** Der Prototyp läuft dauerhaft ohne TLS (siehe `docs/security.md`). Kein `certbot`, kein HSTS, kein Redirect. Begründung: Demo-Umgebung, keine personenbezogenen Daten, keine Zahlungsabwicklung.
+- **HTTPS optional per UI.** Die Installation liefert default nginx auf Port 80; ein angemeldeter Admin kann in den Einstellungen eine Domain eintragen und das Let's-Encrypt-Zertifikat holen lassen (`certbot --nginx` via Helper). HSTS wird absichtlich nicht gesetzt (Demo-Charakter).
 
 ## Alternativen
 - **Docker-Compose:** Schöner für Reproduzierbarkeit, aber zusätzlicher Lernaufwand und Overhead. Für den Demo-Scope nicht nötig.

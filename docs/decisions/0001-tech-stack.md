@@ -8,7 +8,7 @@
 Wir bauen ein Web-Tool zur KI-gestützten Preisoptimierung als Studienprojekt. Der Stack muss in einem Semester von einem 4er-Team beherrschbar sein, die Modul-Pflichtthemen (DB-gestützte Anwendung, IT-Architektur, Software-Modellierung, Datenschutz, Informationssicherheit) abbilden und eine saubere Frontend/Backend-Trennung ermöglichen.
 
 ## Entscheidung
-- **Backend:** Python 3.12 mit FastAPI.
+- **Backend:** Python 3.11 mit FastAPI (Debian-12-Standard, ohne Fremdquellen).
 - **Datenbank:** PostgreSQL 16.
 - **Frontend:** HTML + JavaScript (vanilla); leichtes Framework (z. B. Alpine.js oder Vue) bei Bedarf später.
 - **LLM-API:** gängige Cloud-APIs kommen in Frage (Google, OpenAI, Anthropic); die finale Wahl wird in einem Folge-ADR (`0002-llm-provider.md`) anhand Kosten, Datenschutz und Antwortqualität getroffen.
