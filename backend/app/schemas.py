@@ -78,12 +78,15 @@ class PriceRequest(BaseModel):
     """Runtime-Kontext fuer die Preisberechnung (aus Frontend-Simulation).
 
     Werte sind optional; wenn weggelassen, fallen Formeln auf Produkt-
-    Defaults (stock=start_stock, hour=0, day=1) zurueck.
+    Defaults (stock=start_stock, hour=0, day=1, demand=50) zurueck.
     """
 
     hour: int | None = Field(default=None, ge=0, le=23)
     day: int | None = Field(default=None, ge=1, le=31)
     current_stock: int | None = Field(default=None, ge=0)
+    # 0 = keine Nachfrage, 50 = normal, 100 = doppelt. Multipliziert
+    # im Frontend den Lagerverbrauch; in Formeln als Variable `demand`.
+    demand: int | None = Field(default=None, ge=0, le=100)
 
 
 class PriceSuggestionOut(BaseModel):

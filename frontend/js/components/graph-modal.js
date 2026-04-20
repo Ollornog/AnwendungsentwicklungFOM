@@ -14,7 +14,8 @@ document.addEventListener('alpine:init', () => {
     { key: 'day',              label: 'Tag im Monat (1–28)',        range: [1, 28, 1] },
     { key: 'weekday',          label: 'Wochentag (1–7)',            range: [1, 7, 1] },
     { key: 'stock',            label: 'Lagerbestand (0 – Max)',     range: 'stock' },
-    { key: 'monthly_demand',   label: 'Nachfrage / Monat (0–500)',  range: [0, 500, 10] },
+    { key: 'demand',           label: 'Nachfrage-Faktor (0–100)',   range: [0, 100, 5] },
+    { key: 'monthly_demand',   label: 'Verbrauch / Monat (0–500)',  range: [0, 500, 10] },
     { key: 'cost_price',       label: 'Einkaufspreis (± 50 %)',     range: 'cost' },
     { key: 'competitor_price', label: 'Wettbewerbspreis (± 50 %)',  range: 'cost' },
     { key: 'time',             label: 'Zeit gesamt (1 Monat)',      range: 'time' },
@@ -68,6 +69,7 @@ document.addEventListener('alpine:init', () => {
         hour: Number(this.sim.hour) || 0,
         day: day,
         weekday: ((day - 1) % 7) + 1,
+        demand: Number(p._demand != null ? p._demand : 50),
       };
     },
 

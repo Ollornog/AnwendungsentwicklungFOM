@@ -25,6 +25,7 @@ def build_variables(product: Product, runtime: dict | None) -> dict[str, Any]:
     hour = rt.get("hour")
     day_raw = rt.get("day")
     day = 1 if day_raw is None else int(day_raw)
+    demand = rt.get("demand")
     # weekday: 1 = Montag, 7 = Sonntag. Tag 1/8/15/22 ist Montag usw.
     weekday = ((day - 1) % 7) + 1
     return {
@@ -38,6 +39,9 @@ def build_variables(product: Product, runtime: dict | None) -> dict[str, Any]:
         "hour": 0 if hour is None else hour,
         "day": day,
         "weekday": weekday,
+        # Nachfrage-Faktor 0..100; 50 = normal. Fuer Formeln verfuegbar,
+        # im Frontend zusaetzlich als Multiplikator des Lagerverbrauchs.
+        "demand": 50 if demand is None else int(demand),
         # Konstante fuer periodische Formeln (sin/cos)
         "pi": _PI,
     }
@@ -52,6 +56,7 @@ ALLOWED_VARIABLES = (
     "hour",
     "day",
     "weekday",
+    "demand",
     "pi",
 )
 

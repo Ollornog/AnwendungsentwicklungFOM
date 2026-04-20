@@ -20,6 +20,7 @@
     'hour',
     'day',
     'weekday',
+    'demand',
     'pi',
   ];
 

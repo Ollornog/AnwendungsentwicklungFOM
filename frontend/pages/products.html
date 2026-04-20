@@ -71,7 +71,7 @@
               <th>EK</th>
               <th>Wettb.</th>
               <th>Lager (akt./Max)</th>
-              <th>Nachfr./Mon</th>
+              <th>Nachfrage</th>
               <th>Strategie</th>
               <th>Verkaufspreis</th>
               <th></th>
@@ -90,7 +90,14 @@
                   <input type="range" min="0" :max="Math.max(1, p.stock)" x-model.number="p._current_stock">
                   <small><span x-text="Math.round(p._current_stock)"></span> / <span x-text="p.stock"></span></small>
                 </td>
-                <td x-text="p.monthly_demand ?? 0"></td>
+                <td style="min-width:7rem">
+                  <input type="range" min="0" max="100" x-model.number="p._demand"
+                         :title="`${p._demand}% (Basis ${p.monthly_demand}/Mon)`">
+                  <small>
+                    <span x-text="p._demand"></span>% ·
+                    <span class="muted" x-text="p.monthly_demand + '/Mon'"></span>
+                  </small>
+                </td>
                 <td><small x-text="strategyLabel(p)"></small></td>
                 <td class="price" x-text="formatPrice(priceFor(p))"></td>
                 <td class="actions">
@@ -129,7 +136,7 @@
             <label>Wettbewerbspreis (EUR)
               <input type="number" step="0.01" min="0" x-model="competitor_price">
             </label>
-            <label>Nachfrage / Monat
+            <label>Verbrauch / Monat
               <input type="number" min="0" step="1" x-model="monthly_demand">
             </label>
           </div>
@@ -385,6 +392,8 @@
 
         _initRuntime(p) {
           p._current_stock = Number(p.stock) || 0;
+          // 50 = neutraler Nachfrage-Faktor; 0..100 ist der UI-Slider.
+          p._demand = 50;
         },
 
         togglePause() {
@@ -411,11 +420,14 @@
           if (nextHour === 0) {
             this.sim.day = (Number(this.sim.day) % 28) + 1;
           }
-          // Lagerverbrauch pro Stunde = Nachfrage/Monat / (28 Tage * 24 Std).
-          // Bei 0 Auto-Refill auf Lagergroesse.
+          // Lagerverbrauch pro Stunde = Basis-Verbrauch pro Stunde
+          // (monthly_demand / (28*24)) multipliziert mit dem Nachfrage-
+          // Faktor: demand/50 ergibt 0x bei 0, 1x bei 50, 2x bei 100.
+          // Auto-Refill auf Lagergroesse, wenn der Bestand 0 erreicht.
           for (const p of this.products) {
-            const perHour = (Number(p.monthly_demand) || 0) / (28 * 24);
-            let next = Number(p._current_stock) - perHour;
+            const baseHourly = (Number(p.monthly_demand) || 0) / (28 * 24);
+            const factor = (Number(p._demand) || 0) / 50;
+            let next = Number(p._current_stock) - baseHourly * factor;
             if (!Number.isFinite(next) || next <= 0) next = Number(p.stock) || 0;
             p._current_stock = next;
           }
@@ -429,9 +441,12 @@
         onProductUpdated(updated) {
           const idx = this.products.findIndex((x) => x.id === updated.id);
           if (idx < 0) return;
-          // Runtime-State (aktueller Lagerbestand) nicht ueberschreiben –
-          // nur statische Felder aus der Server-Antwort.
-          const runtime = { _current_stock: this.products[idx]._current_stock };
+          // Runtime-State (aktueller Lagerbestand, Nachfrage-Slider)
+          // nicht ueberschreiben – nur statische Felder aus der Antwort.
+          const runtime = {
+            _current_stock: this.products[idx]._current_stock,
+            _demand: this.products[idx]._demand,
+          };
           this.products[idx] = Object.assign({}, updated, runtime);
         },
 
@@ -455,6 +470,7 @@
             hour: Number(this.sim.hour) || 0,
             day: day,
             weekday: ((day - 1) % 7) + 1,
+            demand: Number(p._demand != null ? p._demand : 50),
           };
         },
 

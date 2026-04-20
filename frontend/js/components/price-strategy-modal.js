@@ -29,6 +29,7 @@ document.addEventListener('alpine:init', () => {
         { label: 'hour', insert: 'hour' },
         { label: 'day', insert: 'day' },
         { label: 'weekday', insert: 'weekday' },
+        { label: 'demand', insert: 'demand' },
         { label: 'π', insert: 'pi' },
       ],
     },

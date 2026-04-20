@@ -156,6 +156,7 @@ _ALLOWED_FORMULA_VARS = (
     "hour",
     "day",
     "weekday",
+    "demand",
     "pi",
 )
 
@@ -218,6 +219,11 @@ def _strategy_prompt(
             "\nSchlage eine Preisformel vor. Erlaubte Variablen: "
             f"{vars_list}. "
             "weekday ist 1=Montag, …, 7=Sonntag. `pi` ist die Kreiszahl. "
+            "`demand` ist ein Live-Slider 0..100 auf der Produktseite "
+            "(0 = keine Nachfrage, 50 = neutral, 100 = doppelte Nachfrage); "
+            "`monthly_demand` ist die statische Basis-Nachfrage aus den "
+            "Produktdaten. Wenn du die Nachfrage einfliessen lassen moechtest, "
+            "nutze `demand` (z. B. `demand / 50` als Multiplikator um 1).\n"
             "Hinweis: die Demo-Simulation rechnet mit einem Monat von "
             "genau 28 Tagen (day laeuft zyklisch von 1 bis 28), damit "
             "Wochentage aufgehen. Bitte in periodischen Formeln 28 als "
