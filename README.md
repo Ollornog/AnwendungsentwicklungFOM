@@ -2,6 +2,16 @@
 
 Studentisches Semesterprojekt der FOM Hochschule, Modul Anwendungsentwicklung.
 
+## Quick Start auf Debian 12
+
+```bash
+# als root eingeloggt (oder mit sudo vorweg):
+apt-get update && apt-get install -y git
+git clone https://github.com/Ollornog/AnwendungsentwicklungFOM
+cd AnwendungsentwicklungFOM
+./install.sh
+```
+
 Ein Web-Tool, in dem Shop-Betreiberinnen und Shop-Betreiber Produkte pflegen
 und pro Produkt eine Preisstrategie wählen (Fixpreis, Formel, Regel,
 LLM-Vorschlag). Die Preisberechnung läuft gegen einen Live-Simulator
