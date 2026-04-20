@@ -39,7 +39,7 @@
         <strong x-text="sim.day + ' · ' + weekdayName(sim.day)"></strong>
       </label>
       <small class="muted" style="margin-left:auto"
-             x-text="paused ? 'pausiert' : 'Tick 2 s'"></small>
+             x-text="paused ? 'pausiert' : '1 Tick = 1 Std (alle 2 s)'"></small>
       <button type="button"
               class="outline"
               style="padding:0.2rem 0.55rem; font-size:0.8rem; margin:0"
@@ -181,15 +181,18 @@
             <input type="text" x-model="expression" x-ref="expressionInput"
                    placeholder="z. B. cost_price * 1.8 + (hour >= 18) * 2">
           </label>
-          <div class="token-bar">
-            <template x-for="t in tokens" :key="t.label">
-              <button type="button"
-                      class="outline"
-                      :class="'token-' + t.kind"
-                      @click="insertToken(t.insert)"
-                      x-text="t.label"></button>
-            </template>
-          </div>
+          <template x-for="g in tokenGroups" :key="g.kind">
+            <div class="token-bar">
+              <small class="token-label muted" x-text="g.label"></small>
+              <template x-for="t in g.tokens" :key="t.label">
+                <button type="button"
+                        class="outline"
+                        :class="'token-' + g.kind"
+                        @click="insertToken(t.insert)"
+                        x-text="t.label"></button>
+              </template>
+            </div>
+          </template>
           <small class="muted">Klick auf einen Button fügt das Token an der Cursor-Position ein.</small>
         </div>
 
@@ -207,11 +210,11 @@
             <div x-show="aiPrompt || aiReasoning" style="margin-top:0.6rem">
               <label>
                 <span class="badge-ai">Prompt</span> Frage an die KI
-                <textarea readonly rows="6" x-text="aiPrompt" style="font-family:ui-monospace,monospace; font-size:0.8rem"></textarea>
+                <textarea readonly rows="6" x-text="aiPrompt" class="ai-output ai-output-mono"></textarea>
               </label>
               <label>
                 <span class="badge-ai">Antwort</span> Begründung
-                <textarea readonly rows="3" x-text="aiReasoning" style="font-size:0.85rem"></textarea>
+                <textarea readonly rows="3" x-text="aiReasoning" class="ai-output"></textarea>
               </label>
             </div>
           </div>
@@ -239,7 +242,7 @@
         loading: false,
         error: '',
         sim: { hour: 12, day: 15 },
-        paused: false,
+        paused: true, // Simulation startet angehalten; User startet per ▶.
         _tickHandle: null,
 
         async load() {
@@ -279,6 +282,14 @@
 
         tick() {
           if (this.paused) return;
+          // Ein Tick = eine Stunde. Am Tageswechsel springt auch der Tag
+          // eins weiter (zyklisch 1..28, damit Wochentage aufgehen).
+          const nextHour = (Number(this.sim.hour) + 1) % 24;
+          this.sim.hour = nextHour;
+          if (nextHour === 0) {
+            this.sim.day = (Number(this.sim.day) % 28) + 1;
+          }
+          // Lagerbestand: pro Tick um `usage` runter; bei 0 Auto-Refill.
           for (const p of this.products) {
             const u = Number(p._usage) || 0;
             let next = Number(p._current_stock) - u;

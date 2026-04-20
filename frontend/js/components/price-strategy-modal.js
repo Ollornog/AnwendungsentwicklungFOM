@@ -4,39 +4,68 @@
 // - Nach KI-Abfrage: sichtbarer Prompt + Reasoning (Transparenz)
 // - Insert-Buttons fuegen Variablen/Operatoren an Cursor-Position ein
 document.addEventListener('alpine:init', () => {
-  // Tokens, die das Formel-Eingabefeld per Knopfdruck einfuegen kann.
-  const FORMULA_TOKENS = [
-    { label: 'cost_price', insert: 'cost_price', kind: 'var' },
-    { label: 'competitor', insert: 'competitor_price', kind: 'var' },
-    { label: 'monthly_demand', insert: 'monthly_demand', kind: 'var' },
-    { label: 'start_stock', insert: 'start_stock', kind: 'var' },
-    { label: 'stock', insert: 'stock', kind: 'var' },
-    { label: 'usage', insert: 'usage', kind: 'var' },
-    { label: 'hour', insert: 'hour', kind: 'var' },
-    { label: 'day', insert: 'day', kind: 'var' },
-    { label: 'weekday', insert: 'weekday', kind: 'var' },
-    { label: '+', insert: ' + ', kind: 'op' },
-    { label: '−', insert: ' - ', kind: 'op' },
-    { label: '×', insert: ' * ', kind: 'op' },
-    { label: '÷', insert: ' / ', kind: 'op' },
-    { label: '^', insert: ' ** ', kind: 'op' },
-    { label: '%', insert: ' % ', kind: 'op' },
-    { label: '(', insert: '(', kind: 'op' },
-    { label: ')', insert: ')', kind: 'op' },
-    { label: ',', insert: ', ', kind: 'op' },
-    { label: '>', insert: ' > ', kind: 'cmp' },
-    { label: '>=', insert: ' >= ', kind: 'cmp' },
-    { label: '<', insert: ' < ', kind: 'cmp' },
-    { label: '<=', insert: ' <= ', kind: 'cmp' },
-    { label: '==', insert: ' == ', kind: 'cmp' },
-    { label: 'sqrt(', insert: 'sqrt(', kind: 'fn' },
-    { label: 'pow(', insert: 'pow(', kind: 'fn' },
-    { label: 'abs(', insert: 'abs(', kind: 'fn' },
-    { label: 'min(', insert: 'min(', kind: 'fn' },
-    { label: 'max(', insert: 'max(', kind: 'fn' },
-    { label: 'round(', insert: 'round(', kind: 'fn' },
-    { label: 'floor(', insert: 'floor(', kind: 'fn' },
-    { label: 'ceil(', insert: 'ceil(', kind: 'fn' },
+  // Token-Gruppen fuer das Formel-Eingabefeld. Jede Gruppe wird im UI
+  // in einer eigenen Zeile gerendert, damit die Kategorien auf einen Blick
+  // zu trennen sind.
+  const TOKEN_GROUPS = [
+    {
+      kind: 'var',
+      label: 'Variablen',
+      tokens: [
+        { label: 'cost_price', insert: 'cost_price' },
+        { label: 'competitor', insert: 'competitor_price' },
+        { label: 'monthly_demand', insert: 'monthly_demand' },
+        { label: 'start_stock', insert: 'start_stock' },
+        { label: 'stock', insert: 'stock' },
+        { label: 'usage', insert: 'usage' },
+        { label: 'hour', insert: 'hour' },
+        { label: 'day', insert: 'day' },
+        { label: 'weekday', insert: 'weekday' },
+      ],
+    },
+    {
+      kind: 'op',
+      label: 'Operatoren',
+      tokens: [
+        { label: '+', insert: ' + ' },
+        { label: '−', insert: ' - ' },
+        { label: '×', insert: ' * ' },
+        { label: '÷', insert: ' / ' },
+        { label: '^', insert: ' ** ' },
+        { label: '%', insert: ' % ' },
+        { label: '(', insert: '(' },
+        { label: ')', insert: ')' },
+        { label: ',', insert: ', ' },
+      ],
+    },
+    {
+      kind: 'cmp',
+      label: 'Vergleiche',
+      tokens: [
+        { label: '>', insert: ' > ' },
+        { label: '>=', insert: ' >= ' },
+        { label: '<', insert: ' < ' },
+        { label: '<=', insert: ' <= ' },
+        { label: '==', insert: ' == ' },
+        { label: 'and', insert: ' and ' },
+        { label: 'or', insert: ' or ' },
+        { label: 'not', insert: 'not ' },
+      ],
+    },
+    {
+      kind: 'fn',
+      label: 'Funktionen',
+      tokens: [
+        { label: 'sqrt(', insert: 'sqrt(' },
+        { label: 'pow(', insert: 'pow(' },
+        { label: 'abs(', insert: 'abs(' },
+        { label: 'min(', insert: 'min(' },
+        { label: 'max(', insert: 'max(' },
+        { label: 'round(', insert: 'round(' },
+        { label: 'floor(', insert: 'floor(' },
+        { label: 'ceil(', insert: 'ceil(' },
+      ],
+    },
   ];
 
   Alpine.data('priceStrategyModal', () => ({
@@ -53,7 +82,7 @@ document.addEventListener('alpine:init', () => {
     aiReasoning: '',
     saving: false,
     error: '',
-    tokens: FORMULA_TOKENS,
+    tokenGroups: TOKEN_GROUPS,
 
     openFor(product) {
       this.product = product;

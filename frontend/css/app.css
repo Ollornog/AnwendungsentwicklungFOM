@@ -131,3 +131,21 @@ table.compact .actions a {
   background: var(--pico-card-sectionning-background-color, #f8f8f8);
   white-space: pre-wrap;
 }
+
+/* KI-Prompt und Reasoning: gleiche kleine Schriftgroesse */
+textarea.ai-output {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+textarea.ai-output.ai-output-mono {
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+/* Token-Gruppe: Label links, dann Buttons in einer Zeile */
+.token-bar .token-label {
+  flex-basis: 5.5rem;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
