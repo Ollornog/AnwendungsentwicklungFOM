@@ -25,8 +25,15 @@
     </ul>
   </nav>
 
-  <main class="container" x-data="settingsApp()" x-init="load()">
+  <main class="container" x-data="settingsApp()" x-init="$store.auth.ensureMe().then(() => load())">
     <h1>Einstellungen</h1>
+
+    <p class="muted" x-show="$store.auth.user" style="font-size:0.85rem">
+      Angemeldet als <strong x-text="$store.auth.user?.username"></strong>
+      <template x-if="!$store.auth.isAdmin()">
+        <span> · Die Bereiche HTTPS, Rate Limiting und Benutzerverwaltung sind nur für <code>admin</code> sichtbar.</span>
+      </template>
+    </p>
 
     <article>
       <header><strong>Google Gemini API-Key</strong></header>
@@ -78,7 +85,7 @@
       </ul>
     </article>
 
-    <article x-data="httpsAdmin()" x-init="load()">
+    <article x-data="httpsAdmin()" x-init="load()" x-show="$store.auth.isAdmin()" x-cloak>
       <header><strong>HTTPS (Let's Encrypt)</strong></header>
       <p class="muted" x-show="!https.loading">
         Status:
@@ -139,7 +146,31 @@
       </form>
     </article>
 
-    <article x-data="userAdmin()" x-init="load()">
+    <article x-data="rateLimitAdmin()" x-init="load()" x-show="$store.auth.isAdmin()" x-cloak>
+      <header><strong>Rate Limiting</strong></header>
+      <p class="muted" style="font-size:0.85rem">
+        Maximale API-Anfragen pro Nutzer pro Tag. Admin und Standard
+        werden separat gesetzt. Zaehler laufen um Mitternacht (Serverzeit)
+        wieder auf 0. Beim Ueberschreiten antwortet die API mit HTTP 429.
+      </p>
+      <form @submit.prevent="save">
+        <div class="grid">
+          <label>Standard-Nutzer (Anfragen / Tag)
+            <input type="number" min="1" max="100000" step="1" x-model.number="form.default_per_day" required>
+          </label>
+          <label>Admin (Anfragen / Tag)
+            <input type="number" min="1" max="100000" step="1" x-model.number="form.admin_per_day" required>
+          </label>
+        </div>
+        <small class="error" x-show="state.error" x-text="state.error"></small>
+        <small x-show="state.message" style="color:green" x-text="state.message"></small>
+        <footer>
+          <button type="submit" :disabled="state.saving" :aria-busy="state.saving">Speichern</button>
+        </footer>
+      </form>
+    </article>
+
+    <article x-data="userAdmin()" x-init="load()" x-show="$store.auth.isAdmin()" x-cloak>
       <header><strong>Benutzerverwaltung</strong></header>
 
       <p x-show="users.loading" aria-busy="true">Lade…</p>
@@ -216,6 +247,14 @@
       </footer>
     </article>
   </main>
+
+  <footer class="container site-footer">
+    <small class="muted">
+      Studienprojekt FOM · Demo mit Mock-Daten, keine echten Preise ·
+      <a href="/pages/legal.html">Impressum &amp; Datenschutz</a> ·
+      <a href="/pages/compliance.html">Compliance (intern)</a>
+    </small>
+  </footer>
 
   <script src="/js/api.js"></script>
   <script src="/js/store.js"></script>
@@ -375,6 +414,43 @@
             this.https.error = e.message;
           } finally {
             this.https.busy = false;
+          }
+        },
+      };
+    }
+
+    function rateLimitAdmin() {
+      return {
+        form: { default_per_day: 50, admin_per_day: 200 },
+        state: { saving: false, error: '', message: '' },
+
+        async load() {
+          // nur Admin darf den Endpoint aufrufen – Nicht-Admin bekommt 403,
+          // der Block ist dann sowieso ausgeblendet.
+          try {
+            const res = await window.api.get('/settings/rate-limit');
+            this.form.default_per_day = res.default_per_day;
+            this.form.admin_per_day = res.admin_per_day;
+          } catch (_) { /* 403 bei Nicht-Admin ist erwartet */ }
+        },
+
+        async save() {
+          this.state.saving = true;
+          this.state.error = '';
+          this.state.message = '';
+          try {
+            const res = await window.api.put('/settings/rate-limit', {
+              default_per_day: Number(this.form.default_per_day) || 1,
+              admin_per_day: Number(this.form.admin_per_day) || 1,
+            });
+            this.form.default_per_day = res.default_per_day;
+            this.form.admin_per_day = res.admin_per_day;
+            this.state.message = 'Gespeichert.';
+            setTimeout(() => { this.state.message = ''; }, 3000);
+          } catch (e) {
+            this.state.error = e.message;
+          } finally {
+            this.state.saving = false;
           }
         },
       };

@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import get_current_user
+from app.deps import get_current_admin, get_current_user
 from app.models import User
 from app.schemas import UserCreate, UserList, UserListItem, UserUpdate
 from app.security import hash_password
@@ -43,7 +43,7 @@ def _assert_not_protected(user: User) -> None:
 
 @router.get("", response_model=UserList)
 def list_users(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserList:
     rows = db.scalars(select(User).order_by(User.username)).all()
@@ -53,7 +53,7 @@ def list_users(
 @router.post("", response_model=UserListItem, status_code=status.HTTP_201_CREATED)
 def create_user(
     payload: UserCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserListItem:
     existing = db.scalar(select(User).where(User.username == payload.username))
@@ -76,7 +76,7 @@ def create_user(
 def update_user(
     user_id: uuid.UUID,
     payload: UserUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> UserListItem:
     user = _get_user_or_404(db, user_id)
@@ -93,7 +93,7 @@ def update_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
     user_id: uuid.UUID,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> None:
     user = _get_user_or_404(db, user_id)

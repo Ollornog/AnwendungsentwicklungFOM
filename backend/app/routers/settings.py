@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.deps import get_current_user
+from app.deps import get_current_admin, get_current_user
 from app.mock_data import MOCK_PRODUCTS, MOCK_USERS
 from app.models import User
 from app.schemas import (
@@ -17,6 +17,7 @@ from app.schemas import (
     HTTPSEnableRequest,
     HTTPSEnableResponse,
     HTTPSStatus,
+    RateLimitConfig,
 )
 from app.services import app_settings as svc
 from app.services import seeding
@@ -100,7 +101,7 @@ _DOMAIN_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,}$")
 
 @router.get("/https", response_model=HTTPSStatus)
 def get_https_status(
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> HTTPSStatus:
     enabled = svc.get(db, svc.HTTPS_ENABLED) == "1"
@@ -111,7 +112,7 @@ def get_https_status(
 @router.post("/https/enable", response_model=HTTPSEnableResponse)
 def enable_https(
     payload: HTTPSEnableRequest,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> HTTPSEnableResponse:
     """Ruft das Helper-Skript auf, um Let's Encrypt via certbot zu holen.
@@ -156,3 +157,31 @@ def enable_https(
     svc.set_value(db, svc.HTTPS_ENABLED, "1")
     svc.set_value(db, svc.HTTPS_DOMAIN, domain)
     return HTTPSEnableResponse(enabled=True, domain=domain, output=output)
+
+
+# --- Rate Limiting -------------------------------------------------------
+
+
+@router.get("/rate-limit", response_model=RateLimitConfig)
+def get_rate_limit(
+    user: Annotated[User, Depends(get_current_admin)],
+    db: Annotated[Session, Depends(get_db)],
+) -> RateLimitConfig:
+    return RateLimitConfig(
+        default_per_day=svc.rate_limit_for(db, is_admin=False),
+        admin_per_day=svc.rate_limit_for(db, is_admin=True),
+    )
+
+
+@router.put("/rate-limit", response_model=RateLimitConfig)
+def update_rate_limit(
+    payload: RateLimitConfig,
+    user: Annotated[User, Depends(get_current_admin)],
+    db: Annotated[Session, Depends(get_db)],
+) -> RateLimitConfig:
+    svc.set_value(db, svc.RATE_LIMIT_DEFAULT, str(payload.default_per_day))
+    svc.set_value(db, svc.RATE_LIMIT_ADMIN, str(payload.admin_per_day))
+    return RateLimitConfig(
+        default_per_day=svc.rate_limit_for(db, is_admin=False),
+        admin_per_day=svc.rate_limit_for(db, is_admin=True),
+    )

@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.routers import auth as auth_router
 from app.routers import pricing as pricing_router
 from app.routers import products as products_router
+from app.routers import public as public_router
 from app.routers import settings as settings_router
 from app.routers import users as users_router
 
@@ -32,6 +33,7 @@ app.include_router(products_router.router, prefix="/api/v1")
 app.include_router(pricing_router.router, prefix="/api/v1")
 app.include_router(settings_router.router, prefix="/api/v1")
 app.include_router(users_router.router, prefix="/api/v1")
+app.include_router(public_router.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health", tags=["meta"])

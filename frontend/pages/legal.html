@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impressum & Datenschutz – Preisoptimierung</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <nav class="container" x-data="{}">
+    <ul><li>
+      <a href="/" class="brand">
+        <img src="/favicon.svg" alt="">
+        <strong>Preisoptimierung</strong>
+      </a>
+    </li></ul>
+    <ul>
+      <li><a href="#impressum">Impressum</a></li>
+      <li><a href="#datenschutz">Datenschutz</a></li>
+      <li><a href="#betroffenenrechte">Rechte</a></li>
+      <li><a href="/">Login</a></li>
+    </ul>
+  </nav>
+
+  <main class="container" x-data="legalPage()" x-init="load()">
+
+    <article>
+      <header><strong>Demo-Disclaimer</strong></header>
+      <p class="muted">
+        Diese Web-Anwendung ist ein <strong>studentisches Semesterprojekt</strong> der
+        FOM Hochschule im Modul <em>Anwendungsentwicklung</em>. Es handelt
+        sich ausschließlich um einen <strong>Demo-Prototyp mit Mock-Daten</strong> –
+        es werden <em>keine echten Produktpreise festgesetzt</em>, es gibt
+        <em>keine Shop-Anbindung</em>, und es werden <em>keine Endkunden-Daten</em>
+        verarbeitet. Alle dargestellten Preise sind rein simulativ.
+      </p>
+      <p class="muted" x-show="info.domain">
+        Diese Instanz läuft auf <code x-text="info.domain"></code>
+        <span x-show="info.https_enabled"> (HTTPS aktiv)</span>.
+      </p>
+    </article>
+
+    <article id="impressum">
+      <header><strong>Impressum</strong></header>
+      <p><strong>Diensteanbieter (im Sinne des § 5 DDG / § 18 Abs. 2 MStV):</strong></p>
+      <p>
+        Studienteam „Preisoptimierung"<br>
+        FOM Hochschule für Oekonomie &amp; Management<br>
+        Modul <em>Anwendungsentwicklung</em>, Sommersemester 2026
+      </p>
+      <p><strong>Teammitglieder &amp; Ansprechpartner:</strong></p>
+      <ul>
+        <li>Daniel Brunthaler</li>
+        <li>Kayathiri Raveendran</li>
+        <li>Okan Baykal</li>
+        <li>Sven Schlickewei</li>
+      </ul>
+      <p>
+        Kontakt:
+        <template x-if="info.domain">
+          <span>per Mail an <code>kontakt@<span x-text="info.domain"></span></code> bzw. über die Demo-Umgebung <code x-text="info.domain"></code>.</span>
+        </template>
+        <template x-if="!info.domain">
+          <span>über die in der Demo-Umgebung hinterlegte URL (siehe Einstellungsseite eines angemeldeten Admins).</span>
+        </template>
+      </p>
+      <p class="muted" style="font-size:0.85rem">
+        Keine kommerzielle Tätigkeit, kein Gewerbe, keine Redaktion i. S. d.
+        § 18 Abs. 2 MStV. Inhalte stammen ausschließlich aus dem Studienprojekt.
+      </p>
+    </article>
+
+    <article id="datenschutz">
+      <header><strong>Datenschutzhinweis (Art. 13 DSGVO)</strong></header>
+
+      <h3>1. Verantwortlicher</h3>
+      <p>Das oben genannte Studienteam (siehe Impressum).</p>
+
+      <h3>2. Zwecke &amp; Rechtsgrundlagen</h3>
+      <ul>
+        <li><strong>Betrieb der Demo-Anwendung</strong> (Login, Produktverwaltung,
+          Preissimulation, Audit-Trail): Art. 6 Abs. 1 lit. f DSGVO
+          (berechtigtes Interesse: Durchführung des Studienprojekts).</li>
+        <li><strong>Nutzung des LLM-Preisassistenten</strong> (Google Gemini):
+          Art. 6 Abs. 1 lit. f DSGVO. Es werden ausschließlich Produktdaten
+          übermittelt (Name, Kategorie, Preise, Kontext, Nachfrage) – keine
+          Kundendaten.</li>
+      </ul>
+
+      <h3>3. Kategorien personenbezogener Daten</h3>
+      <ul>
+        <li><strong>Kontodaten</strong> der Teammitglieder bzw. Demo-Nutzer:
+          Benutzername, Argon2-Passwort-Hash, Rolle, Zeitstempel.</li>
+        <li><strong>Session-Cookie</strong> (signiert, HttpOnly, SameSite=Lax).</li>
+        <li><strong>Zähler für das API-Tageslimit</strong> (Rate Limit, anonym
+          nur über Benutzer-ID).</li>
+      </ul>
+      <p class="muted">
+        Produktdaten, Preise und Kontexte sind <em>keine</em> personenbezogenen
+        Daten, solange sie sich – wie in dieser Demo – ausschließlich auf
+        fiktive Artikel beziehen.
+      </p>
+
+      <h3>4. Empfänger &amp; Drittlandtransfer</h3>
+      <p>
+        LLM-Anfragen werden an <strong>Google Ireland Ltd. / Google LLC (Gemini API)</strong>
+        übermittelt. Dabei kann es zu Übermittlungen in die USA kommen.
+        Rechtsgrundlage: <strong>Standardvertragsklauseln der EU-Kommission</strong>
+        (Art. 46 Abs. 2 lit. c DSGVO) zuzüglich ergänzender Maßnahmen
+        (Zweckbindung auf Produktdaten, kein Personenbezug, Pseudonymisierung
+        durch fehlende Kundendaten im Prompt). Detaillierte Hinweise zum
+        Auftragsverarbeitungsvertrag mit Google siehe interner Compliance-Bereich.
+      </p>
+      <p class="muted">Weitere Empfänger: keine. Die Anwendung läuft auf einem vom
+        Studienteam betriebenen Debian-Server ohne externes Hosting-Panel.</p>
+
+      <h3>5. Speicherdauer</h3>
+      <p>
+        Benutzerkonten und Preis-Historie bleiben bis zum Projektabschluss
+        (voraussichtlich Juli 2026) erhalten und werden anschließend gelöscht.
+        Rate-Limit-Zähler werden täglich zurückgesetzt und haben keine
+        Langzeitspeicherung über den aktuellen Tag hinaus.
+      </p>
+
+      <h3>6. KI-Einsatz &amp; Einstufung nach EU AI Act</h3>
+      <p>
+        Das eingesetzte KI-System (LLM-basierter Preisvorschlag) fällt unter
+        <strong>„begrenztes Risiko"</strong> gemäß Art. 50 AI Act (Transparenzpflicht).
+        Die Kennzeichnungspflicht wird erfüllt: jeder KI-Vorschlag ist in UI
+        und Preis-Historie durch das Badge „KI-Vorschlag" eindeutig markiert.
+        Entscheidungen trifft stets der Shop-Betreiber (Human-in-the-Loop);
+        die KI empfiehlt lediglich. Es liegt <em>keine automatisierte
+        Einzelentscheidung</em> im Sinne des Art. 22 DSGVO vor.
+      </p>
+
+      <h3>7. Automatisierte Entscheidungsfindung</h3>
+      <p>
+        Findet nicht statt. Jeder KI-Vorschlag muss vom Admin explizit
+        übernommen werden, bevor er Wirkung entfaltet.
+      </p>
+    </article>
+
+    <article id="betroffenenrechte">
+      <header><strong>Ihre Rechte als betroffene Person</strong></header>
+      <p>Ihnen stehen gegenüber dem Verantwortlichen folgende Rechte zu:</p>
+      <ul>
+        <li><strong>Auskunft</strong> (Art. 15 DSGVO)</li>
+        <li><strong>Berichtigung</strong> (Art. 16 DSGVO)</li>
+        <li><strong>Löschung</strong> (Art. 17 DSGVO) – realisierbar über
+          „Datenbank zurücksetzen" in den Einstellungen sowie Löschung
+          Ihres Nutzerkontos durch den Admin.</li>
+        <li><strong>Einschränkung der Verarbeitung</strong> (Art. 18 DSGVO)</li>
+        <li><strong>Datenübertragbarkeit</strong> (Art. 20 DSGVO) – Export der
+          Historie als JSON auf Anfrage.</li>
+        <li><strong>Widerspruch</strong> (Art. 21 DSGVO)</li>
+        <li><strong>Widerruf einer Einwilligung</strong> (Art. 7 Abs. 3 DSGVO)
+          – die Demo-Teilnahme kann jederzeit durch Logout und Account-Löschung
+          beendet werden.</li>
+        <li><strong>Beschwerde bei einer Aufsichtsbehörde</strong> (Art. 77 DSGVO)
+          – zuständig ist die oberste Datenschutzaufsichtsbehörde Ihres
+          Bundeslandes.</li>
+      </ul>
+    </article>
+
+    <article>
+      <header><strong>Technische &amp; organisatorische Maßnahmen (Kurzfassung)</strong></header>
+      <p>Detailfassung siehe interner Compliance-Bereich (Login erforderlich).</p>
+      <ul>
+        <li>TLS-Transportverschlüsselung (Let's Encrypt, aktivierbar in den Einstellungen).</li>
+        <li>Passwort-Hashing per <code>argon2id</code>.</li>
+        <li>Session-Cookies: HttpOnly, SameSite=Lax, signiert.</li>
+        <li>Rate Limiting pro Benutzer pro Tag (Standard 50, Admin 200, einstellbar).</li>
+        <li>Audit-Trail: jede bestätigte Preisberechnung ist mit Benutzer,
+          Zeitpunkt, Strategie und KI-Flag in der Preis-Historie hinterlegt.</li>
+        <li>Zweckbindung gegenüber dem LLM: keine Kunden- oder Personendaten im Prompt.</li>
+      </ul>
+    </article>
+
+  </main>
+
+  <footer class="container site-footer">
+    <small class="muted">
+      Studienprojekt FOM · Demo mit Mock-Daten, keine echten Preise ·
+      <a href="/pages/legal.html">Impressum &amp; Datenschutz</a> ·
+      <a href="/pages/compliance.html">Compliance (intern)</a>
+    </small>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script>
+    function legalPage() {
+      return {
+        info: { domain: null, https_enabled: false },
+        async load() {
+          // Public-Endpoint: kein Login noetig. Wenn nichts zurueck kommt,
+          // fallen die Platzhalter im Template auf den leeren Zustand zurueck.
+          try {
+            const res = await fetch('/api/v1/public/info').then(r => r.json());
+            this.info = res || this.info;
+          } catch (_) { /* offline / nicht deployed */ }
+        },
+      };
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

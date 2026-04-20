@@ -1,10 +1,11 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -116,6 +117,27 @@ class PriceHistory(Base):
     )
 
     user: Mapped["User | None"] = relationship("User", lazy="joined")
+
+
+class ApiRateUsage(Base):
+    """Pro-User-pro-Tag-Zaehler fuer das API-Rate-Limit.
+
+    Wird vom `get_current_user_rate_limited`-Dependency fuer jeden
+    geschuetzten API-Aufruf inkrementiert. Keine Historie – ein
+    zusammengezaehlter Counter pro Tag reicht fuer die Kontrolle.
+    """
+
+    __tablename__ = "api_rate_usage"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+
+    __table_args__ = (
+        CheckConstraint("count >= 0", name="api_rate_usage_count_non_negative"),
+    )
 
 
 class AppSetting(Base):

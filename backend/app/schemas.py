@@ -207,6 +207,20 @@ class HTTPSEnableResponse(BaseModel):
     output: str  # gekuerzter Klartext von certbot / Helper fuer Troubleshooting
 
 
+class RateLimitConfig(BaseModel):
+    """Tages-Rate-Limits. Werte min 1, sonst wuerde niemand mehr arbeiten."""
+
+    default_per_day: int = Field(ge=1, le=100000)
+    admin_per_day: int = Field(ge=1, le=100000)
+
+
+class PublicInfo(BaseModel):
+    """Oeffentliche Daten fuer die Legal-Seite (ohne Login)."""
+
+    domain: str | None = None
+    https_enabled: bool = False
+
+
 class HistoryItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

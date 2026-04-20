@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.deps import get_current_user
+from app.deps import get_current_user_rate_limited as get_current_user
 from app.models import PriceHistory, PriceSuggestion, Product, User
 from app.schemas import (
     ConfirmRequest,

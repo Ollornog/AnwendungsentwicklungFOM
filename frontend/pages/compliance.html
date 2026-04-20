@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compliance – Preisoptimierung</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <nav class="container" x-data="{}">
+    <ul><li>
+      <a href="/pages/products.html" class="brand">
+        <img src="/favicon.svg" alt="">
+        <strong>Preisoptimierung</strong>
+      </a>
+    </li></ul>
+    <ul>
+      <li><a href="/pages/products.html">Produkte</a></li>
+      <li><a href="/pages/settings.html">Einstellungen</a></li>
+      <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
+    </ul>
+  </nav>
+
+  <main class="container" x-data="compliancePage()" x-init="load()">
+    <h1>Compliance &amp; Governance</h1>
+    <p class="muted">
+      Interner Bereich: Verzeichnis von Verarbeitungstätigkeiten, DPIA-
+      Kurzprüfung, TOMs, AVV-Bewertung, NIS-2-Prüfung und KI-Governance.
+      Diese Seite ist nach Login erreichbar und dokumentiert die
+      regulatorische Einordnung des Demo-Projekts.
+    </p>
+
+    <article>
+      <header><strong>1. Verzeichnis von Verarbeitungstätigkeiten (Art. 30 DSGVO)</strong></header>
+      <table class="compact">
+        <tbody>
+          <tr><th>Bezeichnung</th><td>Demo-Anwendung „Preisoptimierung"</td></tr>
+          <tr><th>Verantwortlicher</th><td>Studienteam FOM (siehe Impressum)</td></tr>
+          <tr><th>Zweck</th><td>Studienprojekt; Preissimulation mit KI-gestütztem Vorschlag</td></tr>
+          <tr><th>Rechtsgrundlage</th><td>Art. 6 Abs. 1 lit. f DSGVO</td></tr>
+          <tr><th>Kategorien betroffener Personen</th><td>Teammitglieder, Demo-Nutzer (keine Endkunden)</td></tr>
+          <tr><th>Kategorien personenbezogener Daten</th>
+              <td>Username, Passwort-Hash, Rolle, Session-Cookie, Rate-Limit-Zähler</td></tr>
+          <tr><th>Kategorien von Empfängern</th>
+              <td>Google Ireland Ltd. (LLM-API) – nur Produktdaten, keine Personendaten</td></tr>
+          <tr><th>Drittlandtransfer</th>
+              <td>USA (Google LLC); Grundlage: Standardvertragsklauseln (Art. 46 DSGVO)</td></tr>
+          <tr><th>Löschfristen</th>
+              <td>Nutzerkonten + Historie: Projektabschluss; Rate-Limit: tgl. Reset; Preis-Suggestions: TTL 15 min</td></tr>
+          <tr><th>TOMs</th><td>siehe Abschnitt 4</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article>
+      <header><strong>2. Datenschutz-Folgenabschätzung (Art. 35 DSGVO) – Kurzprüfung</strong></header>
+      <p>
+        Geprüft wurde, ob eine vollständige DSFA erforderlich ist. Ergebnis:
+        <strong>nicht zwingend</strong>, mit dokumentierter Begründung.
+      </p>
+      <ul>
+        <li><strong>Profiling / automatisierte Einzelentscheidungen:</strong> liegen
+          nicht vor. Jeder KI-Vorschlag wird vom Admin bestätigt
+          (Human-in-the-Loop).</li>
+        <li><strong>Umfangreiche besondere Kategorien:</strong> keine
+          (Art. 9 DSGVO nicht einschlägig).</li>
+        <li><strong>Systematische Überwachung öffentlicher Bereiche:</strong> nein.</li>
+        <li><strong>Innovative Technologie-Risiken:</strong> LLM-Einsatz als
+          neuer Risikofaktor ist berücksichtigt; durch Zweckbindung (keine
+          Kundendaten im Prompt) und Transparenz (Kennzeichnung KI-Vorschlag)
+          mitigiert.</li>
+      </ul>
+      <p class="muted">
+        Dieser Abschnitt dokumentiert die Prüfung nach Art. 35 Abs. 1
+        DSGVO. Im Produktivbetrieb mit Echtkundendaten wäre eine vollständige
+        DSFA nachzuziehen.
+      </p>
+    </article>
+
+    <article>
+      <header><strong>3. AVV mit dem LLM-Anbieter (Art. 28 DSGVO)</strong></header>
+      <p>
+        Die Nutzung der <strong>Gemini API</strong> erfolgt auf Basis der
+        <em>Google Cloud Terms of Service</em> und der dazugehörigen
+        <em>Data Processing Addendum (DPA)</em>. Google fungiert in Bezug auf
+        Input/Output-Daten grundsätzlich als Auftragsverarbeiter. Für den
+        Prototyp-Betrieb werden ausschließlich nicht-personenbezogene
+        Produktdaten übermittelt; eine vertragliche Dokumentation wurde
+        nicht separat abgeschlossen, weil das Studienprojekt keinen
+        Produktiv-Betrieb darstellt.
+      </p>
+      <p class="muted">
+        Produktivempfehlung: separates, unterzeichnetes AVV mit Google
+        Cloud abschließen, zuzüglich Verfahrensverzeichnis pro Prompt.
+      </p>
+    </article>
+
+    <article>
+      <header><strong>4. Technisch-organisatorische Maßnahmen (Art. 32 DSGVO)</strong></header>
+      <table class="compact">
+        <thead><tr><th>Schutzziel</th><th>Maßnahme</th></tr></thead>
+        <tbody>
+          <tr><td>Vertraulichkeit</td>
+              <td>Argon2id-Passwort-Hashing; signierte HttpOnly-Session-Cookies;
+                  Rollen-Trennung admin/viewer; Rate-Limit pro Nutzer pro Tag;
+                  Admin-only Zugriff auf HTTPS-/User-/Rate-Limit-Settings</td></tr>
+          <tr><td>Integrität</td>
+              <td>Alembic-Migrationen versioniert; Preis-Historie mit
+                  Benutzerbezug und KI-Flag; Backend-validierter Formel-
+                  Evaluator ohne `eval` / Funktionsaufrufe außer Whitelist</td></tr>
+          <tr><td>Verfügbarkeit</td>
+              <td>systemd-Service; nginx-Reverse-Proxy mit Let's-Encrypt-
+                  Zertifikat (via Settings aktivierbar); idempotenter
+                  Installer; tägliches DB-Backup empfohlen (TODO produktiv)</td></tr>
+          <tr><td>Belastbarkeit</td>
+              <td>Rate Limiting bremst Missbrauch; strikte Input-Validierung
+                  (Pydantic + Regex für Formeln und Domains); subprocess-Aufrufe
+                  nur als argv-Array, nie Shell</td></tr>
+          <tr><td>Transport</td>
+              <td>TLS via Let's Encrypt (certbot-nginx); HTTP→HTTPS-Redirect
+                  automatisch konfiguriert</td></tr>
+          <tr><td>Zugriff</td>
+              <td>Backend-Service-User „preisopt" ohne allgemeine Sudo-Rechte;
+                  nur ein einziger privilegierter Helper-Befehl (HTTPS-Enable)
+                  via sudoers.d freigegeben</td></tr>
+          <tr><td>Weisungsbindung Dritter</td>
+              <td>LLM-Aufrufe sind strikt zweckgebunden auf Produktdaten; der
+                  Prompt wird in der UI vollständig als „Frage an die KI"
+                  angezeigt und damit überprüfbar gemacht</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article>
+      <header><strong>5. NIS-2-Prüfung</strong></header>
+      <p>
+        Die NIS-2-Richtlinie (Umsetzung DE: NIS2UmsuCG) adressiert
+        „wesentliche" und „wichtige" Einrichtungen in kritischer Infrastruktur
+        (Energie, Gesundheit, digitale Infrastruktur etc.) ab festgelegten
+        Schwellenwerten.
+      </p>
+      <p>
+        Ergebnis der Prüfung: <strong>nicht im Anwendungsbereich</strong>.
+        Das Studienprojekt erbringt keine kritische Dienstleistung, betreibt
+        keine kritische Infrastruktur und unterschreitet jeden relevanten
+        Mitarbeiter- oder Umsatzschwellenwert. Dennoch wurden die in der
+        Richtlinie geforderten Mindestmaßnahmen (Art. 21 NIS-2) im
+        Rahmen der TOMs <em>orientierungshalber</em> umgesetzt:
+        Risikomanagement via Rate Limit, Zugriffsbeschränkung über Rollen,
+        Incident-Nachvollzug über die Preis-Historie, Lieferkettensicherheit
+        dokumentiert durch die AVV-Bewertung in Abschnitt 3.
+      </p>
+    </article>
+
+    <article>
+      <header><strong>6. KI-Governance &amp; AI Act</strong></header>
+      <h3>Einstufung</h3>
+      <p>
+        Das LLM-gestützte Preisvorschlag-Feature ist ein
+        <strong>„KI-System mit begrenztem Risiko"</strong> nach Art. 50
+        EU AI Act (Verordnung 2024/1689). Einstufungsgründe:
+      </p>
+      <ul>
+        <li>Interaktion Mensch-KI (Generativer Text, strukturierte Antwort).</li>
+        <li>Keine Aufnahme in Annex III (Hochrisiko) – keine Entscheidungen
+          über Bildungszugang, Beschäftigung, Bonität, Strafverfolgung,
+          Migration oder biometrische Identifikation.</li>
+        <li>Verbrauchernahe Nutzung nicht gegeben (B2B-Demo, kein
+          Endkundenkontakt).</li>
+      </ul>
+
+      <h3>Transparenzpflicht (Art. 50 AI Act)</h3>
+      <p>
+        Wird erfüllt durch:
+      </p>
+      <ul>
+        <li>Badge „KI-Vorschlag" an jedem LLM-generierten Preis in der
+          Tabelle und in der Preis-Historie.</li>
+        <li>Vollständige Anzeige des <em>an die KI geschickten Prompts</em>
+          in der UI vor der Antwort.</li>
+        <li>Anzeige der Begründung, die die KI zurückgeliefert hat.</li>
+      </ul>
+
+      <h3>Menschliche Aufsicht (Art. 14 AI Act, sinngemäß)</h3>
+      <p>
+        Der Shop-Betreiber (Admin) bestätigt jede KI-Empfehlung manuell,
+        bevor sie als Strategie übernommen oder in die Preis-Historie
+        geschrieben wird. Es gibt keinen Auto-Apply-Pfad.
+      </p>
+
+      <h3>KI-Kompetenz (Art. 4 AI Act)</h3>
+      <p>
+        Art. 4 AI Act verpflichtet Betreiber zur Sicherstellung
+        ausreichender KI-Kompetenz beim eingesetzten Personal. Das
+        Team besteht aus vier FOM-Studierenden im Studiengang
+        <em>Anwendungsentwicklung</em>, die im Rahmen der Modul-
+        Anforderungen KI-Technologien, deren Risiken, Grenzen und
+        regulatorische Einordnung behandelt haben:
+      </p>
+      <ul>
+        <li>Daniel Brunthaler – Entwicklung / Backend</li>
+        <li>Kayathiri Raveendran – Entwicklung / Datenbank</li>
+        <li>Okan Baykal – Entwicklung / Frontend</li>
+        <li>Sven Schlickewei – Entwicklung / Deployment &amp; Compliance-Doku</li>
+      </ul>
+      <p class="muted">
+        Alle vier sind eingetragen und authentifizierbar im System
+        (Benutzerverwaltung → Team-Accounts).
+      </p>
+    </article>
+
+    <article>
+      <header><strong>7. Demo-Kontext &amp; Haftungsausschluss</strong></header>
+      <p>
+        Der gesamte Inhalt der Anwendung – Produkte, Preise, Nachfrage,
+        Wettbewerbsdaten, Historien – ist <strong>Mock-Daten</strong>. Das
+        System trifft keine geschäftlichen Entscheidungen, steuert keine
+        realen Shopsysteme und gibt keine für den Markt verbindlichen
+        Empfehlungen ab. Jeder Praxiseinsatz würde eine vollständige
+        DSFA, einen signierten AVV mit Google Cloud sowie erweiterte TOMs
+        (u. a. Backup, Monitoring, Incident-Response-Plan) erfordern.
+      </p>
+    </article>
+
+  </main>
+
+  <footer class="container site-footer">
+    <small class="muted">
+      Studienprojekt FOM · Demo mit Mock-Daten, keine echten Preise ·
+      <a href="/pages/legal.html">Impressum &amp; Datenschutz</a> ·
+      <a href="/pages/compliance.html">Compliance (intern)</a>
+    </small>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/store.js"></script>
+  <script>
+    function compliancePage() {
+      return {
+        async load() {
+          // Seite ist public static HTML – aber Inhalt ist nur fuer
+          // angemeldete Nutzer gedacht. Unauthentifiziert: zurueck zum Login.
+          try {
+            await window.api.get('/auth/me');
+          } catch (_) {
+            // api.js leitet bei 401 bereits auf / um.
+          }
+        },
+      };
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>
