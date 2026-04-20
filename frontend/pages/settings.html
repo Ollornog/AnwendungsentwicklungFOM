@@ -102,6 +102,67 @@
       </form>
     </article>
 
+    <article x-data="userAdmin()" x-init="load()">
+      <header><strong>Benutzerverwaltung</strong></header>
+
+      <p x-show="users.loading" aria-busy="true">Lade…</p>
+      <small class="error" x-show="users.error" x-text="users.error"></small>
+      <small x-show="users.message" style="color:green" x-text="users.message"></small>
+
+      <div x-show="!users.loading && users.items.length > 0" style="overflow-x:auto">
+        <table class="compact">
+          <thead>
+            <tr>
+              <th>Benutzer</th>
+              <th>Rolle</th>
+              <th>Erstellt</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="u in users.items" :key="u.id">
+              <tr>
+                <td>
+                  <strong x-text="u.username"></strong>
+                  <template x-if="u.username === 'admin'">
+                    <small class="muted"> · geschützt</small>
+                  </template>
+                </td>
+                <td x-text="u.role"></td>
+                <td x-text="formatDate(u.created_at)"></td>
+                <td class="actions">
+                  <button class="outline"
+                          @click="changeUserPassword(u)"
+                          :disabled="u.username === 'admin'"
+                          :title="u.username === 'admin' ? 'Admin-Account ist geschützt' : 'Passwort setzen'">Passwort</button>
+                  <button class="secondary outline"
+                          @click="deleteUser(u)"
+                          :disabled="u.username === 'admin'"
+                          :title="u.username === 'admin' ? 'Admin-Account ist geschützt' : 'Benutzer löschen'">Löschen</button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <form @submit.prevent="createUser" style="margin-top:0.8rem">
+        <div class="grid">
+          <label>Neuer Benutzername
+            <input type="text" x-model="form.username" minlength="1" maxlength="64"
+                   pattern="[A-Za-z0-9_.\-]+" required>
+          </label>
+          <label>Passwort (min. 6 Zeichen)
+            <input type="password" x-model="form.password" minlength="6" autocomplete="new-password" required>
+          </label>
+        </div>
+        <small class="error" x-show="form.error" x-text="form.error"></small>
+        <footer>
+          <button type="submit" :disabled="form.saving" :aria-busy="form.saving">Anlegen</button>
+        </footer>
+      </form>
+    </article>
+
     <article>
       <header><strong>Datenbank zurücksetzen</strong></header>
       <p class="muted">
@@ -231,6 +292,89 @@
             this.resetError = e.message;
           } finally {
             this.resetting = false;
+          }
+        },
+      };
+    }
+  </script>
+  <script>
+    function userAdmin() {
+      return {
+        users: { loading: false, items: [], error: '', message: '' },
+        form: { username: '', password: '', saving: false, error: '' },
+
+        async load() {
+          this.users.loading = true;
+          this.users.error = '';
+          try {
+            const res = await window.api.get('/users');
+            this.users.items = res.items || [];
+          } catch (e) {
+            this.users.error = e.message;
+          } finally {
+            this.users.loading = false;
+          }
+        },
+
+        formatDate(iso) {
+          try { return new Date(iso).toLocaleString('de-DE'); } catch { return iso; }
+        },
+
+        _flash(msg) {
+          this.users.message = msg;
+          setTimeout(() => { this.users.message = ''; }, 3000);
+        },
+
+        async createUser() {
+          if (this.form.password.length < 6) {
+            this.form.error = 'Passwort zu kurz (min. 6 Zeichen).';
+            return;
+          }
+          this.form.saving = true;
+          this.form.error = '';
+          try {
+            await window.api.post('/users', {
+              username: this.form.username,
+              password: this.form.password,
+            });
+            this.form.username = '';
+            this.form.password = '';
+            await this.load();
+            this._flash('Benutzer angelegt.');
+          } catch (e) {
+            this.form.error = e.message;
+          } finally {
+            this.form.saving = false;
+          }
+        },
+
+        async changeUserPassword(u) {
+          if (u.username === 'admin') return;
+          const pw = window.prompt(`Neues Passwort für "${u.username}" (min. 6 Zeichen):`);
+          if (pw === null) return;
+          if (pw.length < 6) {
+            this.users.error = 'Passwort zu kurz.';
+            return;
+          }
+          this.users.error = '';
+          try {
+            await window.api.put(`/users/${u.id}`, { password: pw });
+            this._flash(`Passwort für ${u.username} geändert.`);
+          } catch (e) {
+            this.users.error = e.message;
+          }
+        },
+
+        async deleteUser(u) {
+          if (u.username === 'admin') return;
+          if (!confirm(`Benutzer "${u.username}" wirklich löschen?`)) return;
+          this.users.error = '';
+          try {
+            await window.api.del(`/users/${u.id}`);
+            await this.load();
+            this._flash(`Benutzer ${u.username} gelöscht.`);
+          } catch (e) {
+            this.users.error = e.message;
           }
         },
       };

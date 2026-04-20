@@ -1,4 +1,4 @@
-"""Mock-Produkte fuer Demo.
+"""Mock-Produkte + Demo-Benutzer fuer die Demo.
 
 Zentral gehalten, damit das Seed-Skript (backend/seed.py) und der
 DB-Reset-Endpoint (app/routers/settings.py) auf dieselben Daten
@@ -7,6 +7,16 @@ zugreifen. Aenderungen hier wirken in beiden Pfaden.
 from __future__ import annotations
 
 from decimal import Decimal
+
+
+# Team-Accounts fuer die Demo. Passwoerter entsprechen den Nachnamen –
+# fuer eine Semester-Demo okay, keinesfalls fuer echte Systeme.
+MOCK_USERS: list[dict] = [
+    {"username": "Daniel", "password": "Brunthaler", "role": "admin"},
+    {"username": "Kayathiri", "password": "Raveendran", "role": "admin"},
+    {"username": "Okan", "password": "Baykal", "role": "admin"},
+    {"username": "Sven", "password": "Schlickewei", "role": "admin"},
+]
 
 MOCK_PRODUCTS: list[dict] = [
     {

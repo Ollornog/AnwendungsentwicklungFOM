@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db
 from app.deps import get_current_user
-from app.mock_data import MOCK_PRODUCTS
+from app.mock_data import MOCK_PRODUCTS, MOCK_USERS
 from app.models import User
 from app.schemas import AppSettingsOut, AppSettingsUpdate, DatabaseResetResponse
 from app.services import app_settings as svc
@@ -70,7 +70,11 @@ def reset_database_endpoint(
     """
     seeding.reset_database(db, user.id)
     result = seeding.ensure_admin_and_mock_products(
-        db, username=user.username, password="", mock_products=MOCK_PRODUCTS
+        db,
+        username=user.username,
+        password="",
+        mock_products=MOCK_PRODUCTS,
+        mock_users=MOCK_USERS,
     )
     return DatabaseResetResponse(
         products_created=result.products_added,

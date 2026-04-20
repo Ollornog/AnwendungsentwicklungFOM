@@ -24,6 +24,33 @@ class UserOut(BaseModel):
     role: str
 
 
+UserRole = Literal["admin", "viewer"]
+
+
+class UserListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    username: str
+    role: str
+    created_at: datetime
+
+
+class UserList(BaseModel):
+    items: list[UserListItem]
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_.-]+$")
+    password: str = Field(min_length=6, max_length=256)
+    role: UserRole = "admin"
+
+
+class UserUpdate(BaseModel):
+    password: str | None = Field(default=None, min_length=6, max_length=256)
+    role: UserRole | None = None
+
+
 class ProductBase(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     category: str = Field(min_length=1, max_length=64)

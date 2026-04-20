@@ -13,7 +13,7 @@ import argparse
 import sys
 
 from app.db import SessionLocal
-from app.mock_data import MOCK_PRODUCTS
+from app.mock_data import MOCK_PRODUCTS, MOCK_USERS
 from app.services import seeding
 
 
@@ -29,7 +29,11 @@ def main() -> int:
 
     with SessionLocal() as db:
         result = seeding.ensure_admin_and_mock_products(
-            db, username=args.username, password=args.password, mock_products=MOCK_PRODUCTS
+            db,
+            username=args.username,
+            password=args.password,
+            mock_products=MOCK_PRODUCTS,
+            mock_users=MOCK_USERS,
         )
 
     if result.user_created:
@@ -50,6 +54,8 @@ def main() -> int:
             f"{result.products_added} Mock-Produkt(e) angelegt "
             f"(insg. konfiguriert: {len(MOCK_PRODUCTS)})."
         )
+    if result.extra_users_added:
+        print(f"{result.extra_users_added} Demo-User angelegt (Team-Accounts).")
     return 0
 
 

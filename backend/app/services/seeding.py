@@ -21,6 +21,7 @@ class SeedResult:
     user_created: bool
     user_missing_password: bool
     products_added: int
+    extra_users_added: int = 0
 
 
 def ensure_admin_and_mock_products(
@@ -29,8 +30,9 @@ def ensure_admin_and_mock_products(
     username: str,
     password: str,
     mock_products: Iterable[dict],
+    mock_users: Iterable[dict] | None = None,
 ) -> SeedResult:
-    """Legt Admin an (falls fehlt) und fuellt Mock-Produkte idempotent."""
+    """Legt Admin an (falls fehlt), fuellt Mock-Produkte und Demo-User idempotent."""
     user = db.scalar(select(User).where(User.username == username))
     user_created = False
     if user is None:
@@ -58,10 +60,40 @@ def ensure_admin_and_mock_products(
         )
         db.add(product)
         added += 1
+
+    extra_users_added = ensure_demo_users(db, mock_users or [])
+
     db.commit()
     return SeedResult(
-        user_created=user_created, user_missing_password=False, products_added=added
+        user_created=user_created,
+        user_missing_password=False,
+        products_added=added,
+        extra_users_added=extra_users_added,
     )
+
+
+def ensure_demo_users(db: Session, mock_users: Iterable[dict]) -> int:
+    """Sorgt dafuer, dass die Team-Demo-Accounts existieren.
+
+    Idempotent pro Username: bestehende Accounts werden nicht angefasst
+    (auch kein Passwort-Reset). Rueckgabe: Anzahl neu angelegter User.
+    """
+    added = 0
+    for spec in mock_users:
+        username = spec.get("username")
+        if not username:
+            continue
+        if db.scalar(select(User).where(User.username == username)) is not None:
+            continue
+        db.add(
+            User(
+                username=username,
+                password_hash=hash_password(spec["password"]),
+                role=spec.get("role", "admin"),
+            )
+        )
+        added += 1
+    return added
 
 
 def reset_database(db: Session, user_id) -> None:
