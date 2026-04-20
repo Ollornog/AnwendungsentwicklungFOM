@@ -134,8 +134,9 @@ table.compact .actions a {
 
 /* KI-Prompt und Reasoning: gleiche kleine Schriftgroesse */
 textarea.ai-output {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1.35;
+  padding: 0.35rem 0.5rem;
 }
 textarea.ai-output.ai-output-mono {
   font-family: ui-monospace, Menlo, monospace;

@@ -7,15 +7,24 @@ document.addEventListener('alpine:init', () => {
   // Token-Gruppen fuer das Formel-Eingabefeld. Jede Gruppe wird im UI
   // in einer eigenen Zeile gerendert, damit die Kategorien auf einen Blick
   // zu trennen sind.
+  // Variablen in zwei Zeilen: "Produkt" (statisch aus DB) und "Laufzeit"
+  // (aendert sich in der Simulation). Damit ist der Zeilenumbruch geplant
+  // und visuell sauber, statt mitten im Label umzubrechen.
   const TOKEN_GROUPS = [
     {
       kind: 'var',
-      label: 'Variablen',
+      label: 'Produkt',
       tokens: [
         { label: 'cost_price', insert: 'cost_price' },
         { label: 'competitor', insert: 'competitor_price' },
         { label: 'monthly_demand', insert: 'monthly_demand' },
         { label: 'start_stock', insert: 'start_stock' },
+      ],
+    },
+    {
+      kind: 'var',
+      label: 'Laufzeit',
+      tokens: [
         { label: 'stock', insert: 'stock' },
         { label: 'usage', insert: 'usage' },
         { label: 'hour', insert: 'hour' },

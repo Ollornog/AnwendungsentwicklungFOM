@@ -98,6 +98,7 @@
                 <td class="price" x-text="formatPrice(priceFor(p))"></td>
                 <td class="actions">
                   <button class="outline" @click="openStrategyModal(p)" title="Preis-Strategie festlegen">Preis</button>
+                  <button class="secondary outline" @click="openGraph(p)" title="Preis grafisch je Variable">Graph</button>
                   <button class="secondary outline" @click="editProduct(p)" title="Produktdaten bearbeiten">Bearbeiten</button>
                   <a :href="`/pages/history.html?id=${p.id}`" role="button" class="secondary outline" title="Preishistorie">Historie</a>
                 </td>
@@ -236,6 +237,47 @@
       </article>
     </div>
 
+    <!-- Graph-Modal: Verkaufspreis je Variable -->
+    <div x-data="graphModal()"
+         @open-graph-modal.window="show($event.detail)"
+         x-show="open"
+         x-cloak
+         class="modal-backdrop">
+      <article style="max-width:56rem">
+        <header>
+          <strong>Preiskurve:</strong> <span x-text="product?.name"></span>
+          <br><small class="muted">
+            Variiert nur die gewählte Variable; alle anderen Werte bleiben auf dem aktuellen Sim- und Produktstand.
+          </small>
+        </header>
+
+        <template x-if="notSupported">
+          <p class="muted">
+            Grafische Auswertung ist nur für Strategie-Typen <strong>Fixpreis</strong> und <strong>Formel</strong> verfügbar.
+          </p>
+        </template>
+
+        <template x-if="!notSupported">
+          <div>
+            <label>Variable
+              <select x-model="variable" @change="onVariableChange()">
+                <template x-for="o in options" :key="o.key">
+                  <option :value="o.key" x-text="o.label"></option>
+                </template>
+              </select>
+            </label>
+            <div style="position:relative; height:320px">
+              <canvas x-ref="canvas"></canvas>
+            </div>
+          </div>
+        </template>
+
+        <footer>
+          <button type="button" class="secondary" @click="cancel()">Schliessen</button>
+        </footer>
+      </article>
+    </div>
+
     <!-- Wettbewerbspreis-KI-Modal -->
     <div x-data="competitorPriceModal()"
          @open-competitor-modal.window="show()"
@@ -259,7 +301,6 @@
                 <th>Aktuell</th>
                 <th>Vorschlag</th>
                 <th>Δ</th>
-                <th>Begründung</th>
                 <th></th>
               </tr>
             </thead>
@@ -268,20 +309,19 @@
                 <tr>
                   <td>
                     <strong x-text="it.name"></strong>
-                    <br><small class="muted" x-text="it.category"></small>
+                    <br><small class="muted" x-text="it.reasoning"></small>
                   </td>
                   <td x-text="it.current_competitor_price != null
                               ? new Intl.NumberFormat('de-DE', { style:'currency', currency:'EUR' }).format(it.current_competitor_price)
                               : '—'"></td>
                   <td x-text="new Intl.NumberFormat('de-DE', { style:'currency', currency:'EUR' }).format(it.suggested_price)"></td>
                   <td :class="deltaClass(it)" x-text="deltaText(it)"></td>
-                  <td class="muted" style="max-width:18rem" x-text="it.reasoning"></td>
                   <td class="actions">
                     <template x-if="!it.applied">
                       <button class="outline" @click="applyOne(it)" :disabled="it.applying" :aria-busy="it.applying">Übernehmen</button>
                     </template>
                     <template x-if="it.applied">
-                      <small style="color:green">✓ übernommen</small>
+                      <small style="color:green">✓</small>
                     </template>
                   </td>
                 </tr>
@@ -304,12 +344,14 @@
     </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/store.js"></script>
   <script src="/js/formula-eval.js"></script>
   <script src="/js/components/product-form-modal.js"></script>
   <script src="/js/components/price-strategy-modal.js"></script>
   <script src="/js/components/competitor-price-modal.js"></script>
+  <script src="/js/components/graph-modal.js"></script>
   <script>
     function productsApp() {
       return {
@@ -460,6 +502,16 @@
 
         openStrategyModal(p) {
           window.dispatchEvent(new CustomEvent('open-strategy-modal', { detail: p }));
+        },
+
+        openGraph(p) {
+          // Der Graph soll die aktuellen Sim-Werte sehen – wir geben
+          // Produkt und eine flache Kopie von sim mit.
+          window.dispatchEvent(
+            new CustomEvent('open-graph-modal', {
+              detail: { product: p, sim: { hour: this.sim.hour, day: this.sim.day } },
+            }),
+          );
         },
 
         formatEur(n) {
