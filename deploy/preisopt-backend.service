@@ -12,11 +12,20 @@ EnvironmentFile=/opt/preisopt/.env
 ExecStart=/opt/preisopt/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
 Restart=on-failure
 RestartSec=3
-NoNewPrivileges=true
+
+# Hardening-Bemerkung:
+# - Das Feature "HTTPS aktivieren" ruft ueber sudo das Helper-Skript
+#   /usr/local/bin/preisopt-https-enable auf, das nginx-Configs und
+#   Let's-Encrypt-Verzeichnisse anfasst. Dafuer muss der Service
+#   Privilegienerhoehung erlauben und /etc beschreibbar lassen.
+# - PrivateTmp und ProtectHome bleiben aktiv, weil sie die zusaetzlichen
+#   sudo-Pfade nicht blockieren.
+NoNewPrivileges=false
 PrivateTmp=true
-ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/preisopt
+# ProtectSystem=full: /usr, /boot, /efi read-only; /etc darf beschrieben
+# werden, damit certbot die nginx-Site modifizieren kann.
+ProtectSystem=full
 
 [Install]
 WantedBy=multi-user.target
