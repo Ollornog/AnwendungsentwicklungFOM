@@ -5,7 +5,7 @@
 - **Entscheider:** Projektteam
 
 ## Kontext
-ADR 0001 ließ die Wahl zwischen Anthropic Claude und OpenAI offen. Für den Prototyp brauchen wir einen einfach zugänglichen LLM-Endpoint mit Free-Tier oder günstigen Preisen, damit alle Teammitglieder mit API-Keys entwickeln können.
+ADR 0001 ließ die Wahl unter den verbreiteten Cloud-LLM-APIs offen. Für den Prototyp brauchen wir einen einfach zugänglichen Endpoint mit Free-Tier oder günstigen Preisen, damit alle Teammitglieder mit API-Keys entwickeln können.
 
 ## Entscheidung
 Für den Prototyp verwenden wir die **Google Gemini API**.
@@ -23,8 +23,8 @@ Für den Prototyp verwenden wir die **Google Gemini API**.
 - Für den Produktivbetrieb wären zu klären: Auftragsverarbeitungsvertrag mit Google, Datenstandort (EU), Opt-out für Trainingsnutzung. Im Prototyp nur dokumentiert, nicht umgesetzt.
 
 ## Alternativen
-- **Anthropic Claude:** sehr gute Qualität, aber im Team zunächst kein kostenloser Zugang eingerichtet.
-- **OpenAI GPT-4o/mini:** weit verbreitet, jedoch Kostenrahmen für das Team unklar.
+- **OpenAI GPT-4o/mini:** weit verbreitet, jedoch Kostenrahmen für das Team unklar und kein permanenter Free-Tier.
+- **Anthropic-API:** sehr gute Antwortqualität, aber im Team zunächst kein kostenloser Zugang.
 - **Lokales Open-Source-Modell (z. B. Llama über Ollama):** kein externer Datenabfluss, aber hoher Betriebsaufwand und begrenzte Rechenleistung auf Entwickler-Geräten.
 
 ## Offene Punkte

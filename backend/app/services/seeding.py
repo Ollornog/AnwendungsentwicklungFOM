@@ -4,7 +4,6 @@ Wird sowohl vom CLI-Skript `backend/seed.py` als auch vom DB-Reset-Endpoint
 (`app/routers/settings.py`) genutzt. Idempotent pro Produktname.
 """
 
-from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable

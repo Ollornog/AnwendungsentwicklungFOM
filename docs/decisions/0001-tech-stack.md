@@ -11,7 +11,7 @@ Wir bauen ein Web-Tool zur KI-gestützten Preisoptimierung als Studienprojekt. D
 - **Backend:** Python 3.12 mit FastAPI.
 - **Datenbank:** PostgreSQL 16.
 - **Frontend:** HTML + JavaScript (vanilla); leichtes Framework (z. B. Alpine.js oder Vue) bei Bedarf später.
-- **LLM-API:** Anthropic Claude **oder** OpenAI – finale Wahl offen, Entscheidung in einem Folge-ADR (`0002-llm-provider.md`) auf Basis Kosten, Datenschutz, Antwortqualität.
+- **LLM-API:** gängige Cloud-APIs kommen in Frage (Google, OpenAI, Anthropic); die finale Wahl wird in einem Folge-ADR (`0002-llm-provider.md`) anhand Kosten, Datenschutz und Antwortqualität getroffen.
 - **ORM/Migrations:** SQLAlchemy + Alembic (vorgeschlagen, in Folge-ADR bestätigen).
 
 ## Begründung

@@ -5,7 +5,6 @@ Vorrang vor der Env-Konfiguration, sodass z. B. der GEMINI_API_KEY zur
 Laufzeit per UI gewechselt werden kann.
 """
 
-from __future__ import annotations
 
 from sqlalchemy.orm import Session
 

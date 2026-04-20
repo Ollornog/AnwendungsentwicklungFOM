@@ -5,7 +5,6 @@ vom Client (aktueller Lagerbestand, Uhrzeit, Tag) und der Konstante `pi`,
 die fuer glatte periodische Formeln nuetzlich ist.
 """
 
-from __future__ import annotations
 
 import math
 from decimal import Decimal

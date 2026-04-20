@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import get_current_admin, get_current_user
+from app.deps import get_current_admin
 from app.models import User
 from app.schemas import UserCreate, UserList, UserListItem, UserUpdate
 from app.security import hash_password

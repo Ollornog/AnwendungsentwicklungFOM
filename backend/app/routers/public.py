@@ -3,7 +3,6 @@
 Gibt die Datenschutz-/Impressums-Seite genug Info, um die Deployment-
 Domain anzuzeigen – ohne dass der Besucher eingeloggt sein muss.
 """
-from __future__ import annotations
 
 from typing import Annotated
 

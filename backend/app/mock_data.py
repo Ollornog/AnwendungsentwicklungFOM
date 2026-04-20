@@ -4,7 +4,6 @@ Zentral gehalten, damit das Seed-Skript (backend/seed.py) und der
 DB-Reset-Endpoint (app/routers/settings.py) auf dieselben Daten
 zugreifen. Aenderungen hier wirken in beiden Pfaden.
 """
-from __future__ import annotations
 
 from decimal import Decimal
 

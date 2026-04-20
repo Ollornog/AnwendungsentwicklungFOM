@@ -7,7 +7,6 @@ Attribute, keine Imports, keine benutzerdefinierten Funktionen.
 Rückgabe: Decimal (Arithmetik) oder bool (Vergleich).
 """
 
-from __future__ import annotations
 
 import ast
 import math

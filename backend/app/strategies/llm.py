@@ -1,3 +1,9 @@
+"""LLM-Strategie: Preisvorschlag ueber die Gemini-API.
+
+Nur die hier zusammengestellte Whitelist an Produkt-Feldern geht an das
+LLM (siehe docs/compliance.md). Keine Kundendaten, keine personenbezogenen
+Daten – fuer die Demo reicht die Stammdatenebene des Produkts.
+"""
 from decimal import Decimal
 
 from app.llm import LLMResponseError, LLMUnavailableError, suggest_price
@@ -5,16 +11,18 @@ from app.models import Product
 from app.strategies.base import StrategyError, SuggestionResult
 
 
-_WHITELIST_FIELDS = ("name", "category", "cost_price", "stock", "competitor_price")
-
-
 def _whitelist(product: Product) -> dict:
+    """Erlaubter Datensatz fuer den LLM-Prompt. Einzige Quelle der Wahrheit
+    fuer "was sieht die KI vom Produkt". Felder bewusst eng gehalten –
+    keine IDs, keine Owner-Information, keine internen Counter."""
     return {
         "name": product.name,
         "category": product.category,
         "cost_price": str(product.cost_price),
         "stock": product.stock,
-        "competitor_price": str(product.competitor_price) if product.competitor_price is not None else None,
+        "competitor_price": (
+            str(product.competitor_price) if product.competitor_price is not None else None
+        ),
     }
 
 

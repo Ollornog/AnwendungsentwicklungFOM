@@ -4,7 +4,6 @@ Wichtig: Es werden ausschließlich die vom Backend übergebenen Produkt-Whitelis
 gesendet. Keine personenbezogenen Daten, keine Kundendaten (siehe docs/compliance.md).
 """
 
-from __future__ import annotations
 
 import json
 from dataclasses import dataclass
