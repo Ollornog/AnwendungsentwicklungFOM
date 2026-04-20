@@ -18,7 +18,6 @@ document.addEventListener('alpine:init', () => {
     stock: 0,
     competitor_price: null,
     monthly_demand: 0,
-    daily_usage: 0,
     context: '',
     loading: false,
     error: '',
@@ -33,7 +32,6 @@ document.addEventListener('alpine:init', () => {
         this.stock = product.stock ?? 0;
         this.competitor_price = product.competitor_price ?? null;
         this.monthly_demand = product.monthly_demand ?? 0;
-        this.daily_usage = product.daily_usage ?? 0;
         this.context = product.context ?? '';
       } else {
         this.mode = 'create';
@@ -55,7 +53,6 @@ document.addEventListener('alpine:init', () => {
       this.stock = 0;
       this.competitor_price = null;
       this.monthly_demand = 0;
-      this.daily_usage = 0;
       this.context = '';
     },
 
@@ -70,7 +67,6 @@ document.addEventListener('alpine:init', () => {
             ? null
             : Number(this.competitor_price),
         monthly_demand: Number(this.monthly_demand) || 0,
-        daily_usage: Number(this.daily_usage) || 0,
         context: this.context || '',
       };
     },

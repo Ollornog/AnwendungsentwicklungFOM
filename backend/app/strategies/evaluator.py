@@ -10,6 +10,7 @@ Rückgabe: Decimal (Arithmetik) oder bool (Vergleich).
 from __future__ import annotations
 
 import ast
+import math
 import operator
 from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from typing import Any, Callable
@@ -91,6 +92,21 @@ def _fn_ceil(x: Any) -> Decimal:
     return _to_decimal(x).to_integral_value(rounding=ROUND_CEILING)
 
 
+def _fn_mod(x: Any, n: Any) -> Decimal:
+    # explizite Funktion zusaetzlich zum '%'-Operator – erleichtert
+    # periodische Muster wie `mod(hour, 24)` oder `mod(day-1, 7)`.
+    return _to_decimal(x) % _to_decimal(n)
+
+
+def _fn_sin(x: Any) -> Decimal:
+    # Decimal hat keinen sin/cos – ueber float, dann wieder zurueck.
+    return Decimal(str(math.sin(float(_to_decimal(x)))))
+
+
+def _fn_cos(x: Any) -> Decimal:
+    return Decimal(str(math.cos(float(_to_decimal(x)))))
+
+
 _FUNCS: dict[str, Callable[..., Any]] = {
     "sqrt": _fn_sqrt,
     "pow": _fn_pow,
@@ -100,6 +116,9 @@ _FUNCS: dict[str, Callable[..., Any]] = {
     "round": _fn_round,
     "floor": _fn_floor,
     "ceil": _fn_ceil,
+    "mod": _fn_mod,
+    "sin": _fn_sin,
+    "cos": _fn_cos,
 }
 
 

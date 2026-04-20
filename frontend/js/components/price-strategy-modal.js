@@ -26,10 +26,10 @@ document.addEventListener('alpine:init', () => {
       label: 'Laufzeit',
       tokens: [
         { label: 'stock', insert: 'stock' },
-        { label: 'usage', insert: 'usage' },
         { label: 'hour', insert: 'hour' },
         { label: 'day', insert: 'day' },
         { label: 'weekday', insert: 'weekday' },
+        { label: 'π', insert: 'pi' },
       ],
     },
     {
@@ -73,6 +73,9 @@ document.addEventListener('alpine:init', () => {
         { label: 'round(', insert: 'round(' },
         { label: 'floor(', insert: 'floor(' },
         { label: 'ceil(', insert: 'ceil(' },
+        { label: 'mod(', insert: 'mod(' },
+        { label: 'sin(', insert: 'sin(' },
+        { label: 'cos(', insert: 'cos(' },
       ],
     },
   ];

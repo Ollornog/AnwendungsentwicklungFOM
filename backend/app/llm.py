@@ -153,10 +153,10 @@ _ALLOWED_FORMULA_VARS = (
     "monthly_demand",
     "start_stock",
     "stock",
-    "usage",
     "hour",
     "day",
     "weekday",
+    "pi",
 )
 
 _ALLOWED_FORMULA_FUNCS = (
@@ -168,6 +168,9 @@ _ALLOWED_FORMULA_FUNCS = (
     "round",
     "floor",
     "ceil",
+    "mod",
+    "sin",
+    "cos",
 )
 
 
@@ -214,7 +217,7 @@ def _strategy_prompt(
         base += (
             "\nSchlage eine Preisformel vor. Erlaubte Variablen: "
             f"{vars_list}. "
-            "weekday ist 1=Montag, 2=Dienstag, …, 7=Sonntag. "
+            "weekday ist 1=Montag, …, 7=Sonntag. `pi` ist die Kreiszahl.\n"
             "Erlaubte Operatoren: + - * / ** % ( ) sowie die Vergleiche "
             "< <= > >= == != (ein Vergleich ergibt 1 oder 0 und kann "
             "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag "
@@ -229,22 +232,26 @@ def _strategy_prompt(
             "  round(x, n)     – auf n Nachkommastellen; n ist optional (Default 0)\n"
             "  floor(x)        – auf ganze Zahl abrunden\n"
             "  ceil(x)         – auf ganze Zahl aufrunden\n"
+            "  mod(x, n)       – Rest-Modulo, gleichwertig zu `x % n`; "
+            "praktisch fuer periodische Muster\n"
+            "  sin(x)          – Sinus (x im Bogenmass)\n"
+            "  cos(x)          – Kosinus (x im Bogenmass)\n"
             "Keine weiteren Funktionsaufrufe, keine Zuweisungen.\n"
             "Best Practices:\n"
             " - Lagerstand prozentual ueber `stock / start_stock` modellieren, "
             "nicht mit absoluten Schwellen.\n"
-            " - Bevorzuge weiche Kurven mit `sqrt`, `pow`, `min`, `max` statt "
-            "harter Stufen, damit der Preis im Zeit-/Lagerverlauf ruhig und "
-            "stetig variiert. Beispiele:\n"
+            " - Bevorzuge glatte, stetige Kurven statt Stufenfunktionen. "
+            "`sin`/`cos` eignen sich hervorragend fuer homogene periodische "
+            "Muster, die an den Rand-Grenzen (hour 0 vs 23, weekday 1 vs 7) "
+            "keinen Knick haben. Beispiele:\n"
+            "     cost_price * (1 + 0.15 * sin(hour * 2 * pi / 24 - pi/2))   "
+            "# weicher Tagesverlauf, Peak abends\n"
+            "     cost_price * (1 + 0.08 * cos((weekday - 1) * 2 * pi / 7))   "
+            "# homogene Woche, Peak am Wochenanfang\n"
             "     cost_price * 1.8 * pow(stock / start_stock, -0.2)   "
             "# Preis steigt sanft bei sinkendem Lager\n"
             "     competitor_price - 0.5 + 0.8 * pow(1 - stock / start_stock, 2)   "
-            "# quadratisch verstaerkter Aufschlag nahe Null\n"
-            "     cost_price * (1.5 + 0.3 * sqrt(max(0, 1 - stock / start_stock)))   "
-            "# Wurzelkurve statt Stufe\n"
-            " - Tageszeit weich modellieren, z. B. ueber einen Abstand-Term:\n"
-            "     1 - pow((hour - 19) / 6, 2) / 8   "
-            "# Parabel um 19 Uhr, langsam fallend\n"
+            "# quadratischer Aufschlag nahe Null\n"
             " - Wickel die finale Formel in `round(..., 2)`, damit der "
             "Preis immer zwei Nachkommastellen hat.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '

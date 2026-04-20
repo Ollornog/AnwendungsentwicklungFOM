@@ -47,7 +47,6 @@ class Product(Base):
     competitor_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     context: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     monthly_demand: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
-    daily_usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -65,7 +64,6 @@ class Product(Base):
             name="products_competitor_price_non_negative",
         ),
         CheckConstraint("monthly_demand >= 0", name="products_monthly_demand_non_negative"),
-        CheckConstraint("daily_usage >= 0", name="products_daily_usage_non_negative"),
     )
 
 

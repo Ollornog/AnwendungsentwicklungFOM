@@ -15,7 +15,6 @@ class FakeProduct:
     stock: int = 5
     competitor_price: Decimal | None = Decimal("25.00")
     monthly_demand: int = 0
-    daily_usage: int = 0
     context: str = ""
 
 

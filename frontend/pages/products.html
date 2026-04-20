@@ -70,8 +70,8 @@
               <th>Produkt</th>
               <th>EK</th>
               <th>Wettb.</th>
-              <th>Lager (akt./Start)</th>
-              <th>Verbr.</th>
+              <th>Lager (akt./Max)</th>
+              <th>Nachfr./Mon</th>
               <th>Strategie</th>
               <th>Verkaufspreis</th>
               <th></th>
@@ -88,12 +88,9 @@
                 <td x-text="p.competitor_price != null ? formatEur(p.competitor_price) : '—'"></td>
                 <td style="min-width:9rem">
                   <input type="range" min="0" :max="Math.max(1, p.stock)" x-model.number="p._current_stock">
-                  <small><span x-text="p._current_stock"></span> / <span x-text="p.stock"></span></small>
+                  <small><span x-text="Math.round(p._current_stock)"></span> / <span x-text="p.stock"></span></small>
                 </td>
-                <td style="min-width:6rem">
-                  <input type="range" min="0" max="20" x-model.number="p._usage">
-                  <small x-text="p._usage"></small>
-                </td>
+                <td x-text="p.monthly_demand ?? 0"></td>
                 <td><small x-text="strategyLabel(p)"></small></td>
                 <td class="price" x-text="formatPrice(priceFor(p))"></td>
                 <td class="actions">
@@ -136,14 +133,9 @@
               <input type="number" min="0" step="1" x-model="monthly_demand">
             </label>
           </div>
-          <div class="grid">
-            <label>Startbestand
-              <input type="number" min="0" step="1" x-model="stock" required>
-            </label>
-            <label>Verbrauch / Tick
-              <input type="number" min="0" step="1" x-model="daily_usage">
-            </label>
-          </div>
+          <label>Lagergröße
+            <input type="number" min="0" step="1" x-model="stock" required>
+          </label>
           <label>Kontext (für KI-Vorschlag)
             <textarea rows="3" x-model="context"
               placeholder="Produkt, Wettbewerb, Zielgruppe, Tagesprofil …"></textarea>
@@ -218,7 +210,7 @@
             <div x-show="aiPrompt || aiReasoning" style="margin-top:0.6rem">
               <label>
                 <span class="badge-ai">Prompt</span> Frage an die KI
-                <textarea readonly rows="6" x-text="aiPrompt" class="ai-output ai-output-mono"></textarea>
+                <textarea readonly rows="6" x-text="aiPrompt" class="ai-output"></textarea>
               </label>
               <label>
                 <span class="badge-ai">Antwort</span> Begründung
@@ -393,7 +385,6 @@
 
         _initRuntime(p) {
           p._current_stock = Number(p.stock) || 0;
-          p._usage = Number(p.daily_usage) || 0;
         },
 
         togglePause() {
@@ -420,10 +411,11 @@
           if (nextHour === 0) {
             this.sim.day = (Number(this.sim.day) % 28) + 1;
           }
-          // Lagerbestand: pro Tick um `usage` runter; bei 0 Auto-Refill.
+          // Lagerverbrauch pro Stunde = Nachfrage/Monat / (28 Tage * 24 Std).
+          // Bei 0 Auto-Refill auf Lagergroesse.
           for (const p of this.products) {
-            const u = Number(p._usage) || 0;
-            let next = Number(p._current_stock) - u;
+            const perHour = (Number(p.monthly_demand) || 0) / (28 * 24);
+            let next = Number(p._current_stock) - perHour;
             if (!Number.isFinite(next) || next <= 0) next = Number(p.stock) || 0;
             p._current_stock = next;
           }
@@ -437,12 +429,9 @@
         onProductUpdated(updated) {
           const idx = this.products.findIndex((x) => x.id === updated.id);
           if (idx < 0) return;
-          // Runtime-State (aktueller Lagerbestand, Verbrauch im Tick) nicht
-          // ueberschreiben – nur statische Felder aus der Server-Antwort.
-          const runtime = {
-            _current_stock: this.products[idx]._current_stock,
-            _usage: this.products[idx]._usage,
-          };
+          // Runtime-State (aktueller Lagerbestand) nicht ueberschreiben –
+          // nur statische Felder aus der Server-Antwort.
+          const runtime = { _current_stock: this.products[idx]._current_stock };
           this.products[idx] = Object.assign({}, updated, runtime);
         },
 
@@ -463,7 +452,6 @@
             monthly_demand: Number(p.monthly_demand) || 0,
             start_stock: Number(p.stock) || 0,
             stock: Number(p._current_stock) || 0,
-            usage: Number(p._usage) || 0,
             hour: Number(this.sim.hour) || 0,
             day: day,
             weekday: ((day - 1) % 7) + 1,

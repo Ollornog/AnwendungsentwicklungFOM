@@ -32,7 +32,6 @@ class ProductBase(BaseModel):
     competitor_price: Decimal | None = Field(default=None, ge=0)
     context: str = Field(default="", max_length=2000)
     monthly_demand: int = Field(default=0, ge=0)
-    daily_usage: int = Field(default=0, ge=0)
 
 
 class ProductCreate(ProductBase):
@@ -47,7 +46,6 @@ class ProductUpdate(BaseModel):
     competitor_price: Decimal | None = Field(default=None, ge=0)
     context: str | None = Field(default=None, max_length=2000)
     monthly_demand: int | None = Field(default=None, ge=0)
-    daily_usage: int | None = Field(default=None, ge=0)
 
 
 StrategyKind = Literal["fix", "formula", "rule", "llm"]
@@ -80,13 +78,12 @@ class PriceRequest(BaseModel):
     """Runtime-Kontext fuer die Preisberechnung (aus Frontend-Simulation).
 
     Werte sind optional; wenn weggelassen, fallen Formeln auf Produkt-
-    Defaults (stock=start_stock, usage=daily_usage, hour=0, day=1) zurueck.
+    Defaults (stock=start_stock, hour=0, day=1) zurueck.
     """
 
     hour: int | None = Field(default=None, ge=0, le=23)
     day: int | None = Field(default=None, ge=1, le=31)
     current_stock: int | None = Field(default=None, ge=0)
-    usage: int | None = Field(default=None, ge=0)
 
 
 class PriceSuggestionOut(BaseModel):

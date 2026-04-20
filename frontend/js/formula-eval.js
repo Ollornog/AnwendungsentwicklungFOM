@@ -17,10 +17,10 @@
     'monthly_demand',
     'start_stock',
     'stock',
-    'usage',
     'hour',
     'day',
     'weekday',
+    'pi',
   ];
 
   // Gleiche Funktionsnamen wie im Backend. JS-Implementation ueber Math.*,
@@ -37,6 +37,9 @@
     },
     floor: Math.floor,
     ceil: Math.ceil,
+    mod: (x, n) => Number(x) % Number(n),
+    sin: Math.sin,
+    cos: Math.cos,
   };
   const FUNC_NAMES = Object.keys(FUNCS);
   const FUNC_VALUES = Object.values(FUNCS);
@@ -58,7 +61,11 @@
 
     const values = ALLOWED_VARS.map((name) => {
       const v = variables && variables[name];
-      if (v === undefined || v === null || v === '') return 0;
+      if (v === undefined || v === null || v === '') {
+        // `pi` hat einen sinnvollen Default, falls die aufrufende Seite
+        // ihn nicht explizit mitgibt.
+        return name === 'pi' ? Math.PI : 0;
+      }
       const n = Number(v);
       return Number.isFinite(n) ? n : 0;
     });
