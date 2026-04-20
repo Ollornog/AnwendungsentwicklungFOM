@@ -39,6 +39,15 @@ class LLMStrategySuggestion:
     prompt: str  # der tatsaechlich an die KI geschickte Prompt (Transparenz)
 
 
+@dataclass
+class LLMCompetitorItem:
+    """KI-geschaetzter Wettbewerbspreis fuer ein Produkt."""
+
+    product_id: str  # UUID als String, kommt 1:1 vom Request zurueck
+    price: Decimal
+    reasoning: str
+
+
 _RESPONSE_SCHEMA_HINT = (
     'Antworte ausschließlich als JSON in der Form '
     '{"price": <Zahl>, "currency": "EUR", "reasoning": "<kurz>"}. '
@@ -222,12 +231,22 @@ def _strategy_prompt(
             "  ceil(x)         – auf ganze Zahl aufrunden\n"
             "Keine weiteren Funktionsaufrufe, keine Zuweisungen.\n"
             "Best Practices:\n"
-            " - Wenn du auf den Lagerbestand reagierst, druecke das "
-            "prozentual ueber `stock / start_stock` aus (z. B. "
-            "`(stock / start_stock < 0.2) * 3` als Niedrig-Lager-Aufschlag), "
-            "statt harter absoluter Schwellen.\n"
+            " - Lagerstand prozentual ueber `stock / start_stock` modellieren, "
+            "nicht mit absoluten Schwellen.\n"
+            " - Bevorzuge weiche Kurven mit `sqrt`, `pow`, `min`, `max` statt "
+            "harter Stufen, damit der Preis im Zeit-/Lagerverlauf ruhig und "
+            "stetig variiert. Beispiele:\n"
+            "     cost_price * 1.8 * pow(stock / start_stock, -0.2)   "
+            "# Preis steigt sanft bei sinkendem Lager\n"
+            "     competitor_price - 0.5 + 0.8 * pow(1 - stock / start_stock, 2)   "
+            "# quadratisch verstaerkter Aufschlag nahe Null\n"
+            "     cost_price * (1.5 + 0.3 * sqrt(max(0, 1 - stock / start_stock)))   "
+            "# Wurzelkurve statt Stufe\n"
+            " - Tageszeit weich modellieren, z. B. ueber einen Abstand-Term:\n"
+            "     1 - pow((hour - 19) / 6, 2) / 8   "
+            "# Parabel um 19 Uhr, langsam fallend\n"
             " - Wickel die finale Formel in `round(..., 2)`, damit der "
-            "berechnete Preis immer zwei Nachkommastellen hat.\n"
+            "Preis immer zwei Nachkommastellen hat.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '
             '"<kurz, max 2 Saetze>"}. Kein Freitext drum herum.'
         )
@@ -301,3 +320,79 @@ def suggest_strategy(
     return LLMStrategySuggestion(
         target="formula", amount=None, expression=expression, reasoning=reasoning, prompt=prompt
     )
+
+
+def _competitor_prompt(products: list[dict[str, Any]]) -> str:
+    """Prompt fuer die batched Wettbewerbspreis-Schaetzung.
+
+    products: Liste mit {id, name, category, cost_price, current_competitor,
+    context}. Der Prompt bittet die KI, fuer jedes Produkt einen realistischen
+    durchschnittlichen Online-Wettbewerbspreis in EUR zu schaetzen.
+    """
+    lines = []
+    for p in products:
+        current = p.get("current_competitor")
+        current_txt = f"{current} EUR" if current is not None else "unbekannt"
+        context = (p.get("context") or "").strip()
+        ctx_txt = (" · " + context[:180]) if context else ""
+        lines.append(
+            f"- id={p['id']} name=\"{p['name']}\" kategorie=\"{p['category']}\" "
+            f"einkauf={p.get('cost_price', '?')} EUR aktueller_wettbewerb={current_txt}"
+            f"{ctx_txt}"
+        )
+    product_block = "\n".join(lines)
+    return (
+        "Du bist ein Preis-Assistent. Fuer jedes der folgenden Produkte "
+        "schaetze einen realistischen durchschnittlichen Online-Wettbewerbspreis "
+        "in EUR (Deutschland). Fuer eine Demo reicht eine plausible Schaetzung – "
+        "erfinde einen Wert, der zur Produktkategorie passt.\n\n"
+        f"Produkte:\n{product_block}\n\n"
+        "Antworte ausschliesslich als JSON-Array mit einem Objekt pro Produkt:\n"
+        '[{"id": "<uuid>", "price": <zahl>, "reasoning": "<kurz>"} , ...]\n'
+        "Kein Freitext drum herum, keine zusaetzlichen Felder."
+    )
+
+
+def suggest_competitor_prices(
+    products: list[dict[str, Any]],
+    api_key: str | None = None,
+) -> list[LLMCompetitorItem]:
+    """Batch-KI-Call: Wettbewerbspreis-Schaetzung fuer mehrere Produkte."""
+    if not products:
+        return []
+    prompt = _competitor_prompt(products)
+    text = _generate(prompt, online=False, as_json=True, api_key=api_key)
+    import json as _json
+
+    # Antwort kann entweder direkt ein Array sein oder ein Objekt mit Array darin.
+    data: Any
+    try:
+        data = _json.loads(text.strip().lstrip("`").rstrip("`"))
+    except _json.JSONDecodeError:
+        data = _parse_json(text)  # laesst Markdown-Fences fallen
+    if isinstance(data, dict):
+        # manche Modelle wrappen: {"results": [...]}
+        for key in ("results", "items", "data"):
+            if key in data and isinstance(data[key], list):
+                data = data[key]
+                break
+    if not isinstance(data, list):
+        raise LLMResponseError("LLM-Antwort ist kein Array")
+
+    items: list[LLMCompetitorItem] = []
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        pid = str(entry.get("id") or "").strip()
+        price_raw = entry.get("price")
+        if not pid or price_raw is None:
+            continue
+        try:
+            price = Decimal(str(price_raw)).quantize(Decimal("0.01"))
+        except Exception:
+            continue
+        if price < 0:
+            continue
+        reasoning = str(entry.get("reasoning", ""))[:400]
+        items.append(LLMCompetitorItem(product_id=pid, price=price, reasoning=reasoning))
+    return items

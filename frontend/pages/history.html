@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-  <nav class="container">
+  <nav class="container" x-data="{}">
     <ul><li>
       <a href="/pages/products.html" class="brand">
         <img src="/favicon.svg" alt="">
@@ -19,6 +19,7 @@
     <ul>
       <li><a href="/pages/products.html">Produkte</a></li>
       <li><a href="/pages/products.html?create=1">Produkt hinzufügen</a></li>
+      <li><a href="/pages/products.html?competitor=1">Wettbewerb (KI)</a></li>
       <li><a href="/pages/settings.html">Einstellungen</a></li>
       <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
     </ul>

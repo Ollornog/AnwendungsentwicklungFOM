@@ -149,3 +149,7 @@ textarea.ai-output.ai-output-mono {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* Wettbewerbspreis-Modal: farbiger Delta-Ausweis */
+.delta-up   { color: #b3261e; font-variant-numeric: tabular-nums; }
+.delta-down { color: #1b7a3e; font-variant-numeric: tabular-nums; }

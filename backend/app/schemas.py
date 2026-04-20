@@ -126,6 +126,19 @@ class StrategyPromptPreview(BaseModel):
     prompt: str
 
 
+class CompetitorPriceItem(BaseModel):
+    id: uuid.UUID
+    name: str
+    category: str
+    current_competitor_price: Decimal | None
+    suggested_price: Decimal
+    reasoning: str
+
+
+class CompetitorPricesResponse(BaseModel):
+    items: list[CompetitorPriceItem]
+
+
 class AppSettingsOut(BaseModel):
     """Read-only Sicht auf Laufzeit-Einstellungen.
 

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-  <nav class="container">
+  <nav class="container" x-data="{}">
     <ul><li>
       <a href="/pages/products.html" class="brand">
         <img src="/favicon.svg" alt="">
@@ -19,6 +19,7 @@
     <ul>
       <li><a href="/pages/products.html">Produkte</a></li>
       <li><a href="#" @click.prevent="window.dispatchEvent(new CustomEvent('open-product-form'))">Produkt hinzufügen</a></li>
+      <li><a href="#" @click.prevent="window.dispatchEvent(new CustomEvent('open-competitor-modal'))">Wettbewerb (KI)</a></li>
       <li><a href="/pages/settings.html">Einstellungen</a></li>
       <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
     </ul>
@@ -38,14 +39,20 @@
         <input type="range" min="1" max="28" x-model.number="sim.day">
         <strong x-text="sim.day + ' · ' + weekdayName(sim.day)"></strong>
       </label>
-      <small class="muted" style="margin-left:auto"
-             x-text="paused ? 'pausiert' : '1 Tick = 1 Std (alle 2 s)'"></small>
-      <button type="button"
-              class="outline"
-              style="padding:0.2rem 0.55rem; font-size:0.8rem; margin:0"
-              @click="togglePause()"
-              :title="paused ? 'Simulation fortsetzen' : 'Simulation pausieren'"
-              x-text="paused ? '▶' : '⏸'"></button>
+      <div style="margin-left:auto; display:flex; gap:0.35rem">
+        <button type="button"
+                class="outline"
+                style="padding:0.2rem 0.55rem; font-size:0.8rem; margin:0"
+                :class="turbo ? '' : 'secondary'"
+                @click="toggleTurbo()"
+                :title="turbo ? '3× Geschwindigkeit aus' : '3× Geschwindigkeit an'">3×</button>
+        <button type="button"
+                class="outline"
+                style="padding:0.2rem 0.55rem; font-size:0.8rem; margin:0"
+                @click="togglePause()"
+                :title="paused ? 'Simulation fortsetzen' : 'Simulation pausieren'"
+                x-text="paused ? '▶' : '⏸'"></button>
+      </div>
     </div>
 
     <!-- Produkt-Liste -->
@@ -90,7 +97,7 @@
                 <td><small x-text="strategyLabel(p)"></small></td>
                 <td class="price" x-text="formatPrice(priceFor(p))"></td>
                 <td class="actions">
-                  <button class="outline" @click="openStrategyModal(p)" title="Preis-Strategie festlegen">Strategie</button>
+                  <button class="outline" @click="openStrategyModal(p)" title="Preis-Strategie festlegen">Preis</button>
                   <button class="secondary outline" @click="editProduct(p)" title="Produktdaten bearbeiten">Bearbeiten</button>
                   <a :href="`/pages/history.html?id=${p.id}`" role="button" class="secondary outline" title="Preishistorie">Historie</a>
                 </td>
@@ -228,6 +235,73 @@
         </footer>
       </article>
     </div>
+
+    <!-- Wettbewerbspreis-KI-Modal -->
+    <div x-data="competitorPriceModal()"
+         @open-competitor-modal.window="show()"
+         x-show="open"
+         x-cloak
+         class="modal-backdrop">
+      <article>
+        <header>
+          <strong>Wettbewerbspreise (KI-Schätzung)</strong>
+          <br><small class="muted">Für jedes Produkt schätzt die KI einen plausiblen Wettbewerbspreis. Übernahme pro Zeile oder für alle.</small>
+        </header>
+
+        <p x-show="loading" aria-busy="true">KI rechnet …</p>
+        <small class="error" x-show="error" x-text="error"></small>
+
+        <div x-show="!loading && items.length > 0" style="overflow-x:auto">
+          <table class="compact">
+            <thead>
+              <tr>
+                <th>Produkt</th>
+                <th>Aktuell</th>
+                <th>Vorschlag</th>
+                <th>Δ</th>
+                <th>Begründung</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="it in items" :key="it.id">
+                <tr>
+                  <td>
+                    <strong x-text="it.name"></strong>
+                    <br><small class="muted" x-text="it.category"></small>
+                  </td>
+                  <td x-text="it.current_competitor_price != null
+                              ? new Intl.NumberFormat('de-DE', { style:'currency', currency:'EUR' }).format(it.current_competitor_price)
+                              : '—'"></td>
+                  <td x-text="new Intl.NumberFormat('de-DE', { style:'currency', currency:'EUR' }).format(it.suggested_price)"></td>
+                  <td :class="deltaClass(it)" x-text="deltaText(it)"></td>
+                  <td class="muted" style="max-width:18rem" x-text="it.reasoning"></td>
+                  <td class="actions">
+                    <template x-if="!it.applied">
+                      <button class="outline" @click="applyOne(it)" :disabled="it.applying" :aria-busy="it.applying">Übernehmen</button>
+                    </template>
+                    <template x-if="it.applied">
+                      <small style="color:green">✓ übernommen</small>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <p x-show="!loading && items.length === 0 && !error" class="muted">
+          Keine Produkte im Konto.
+        </p>
+
+        <footer>
+          <button type="button" class="secondary" @click="cancel()">Schliessen</button>
+          <button type="button"
+                  @click="applyAll()"
+                  :disabled="applyingAll || items.length === 0 || items.every(i => i.applied)"
+                  :aria-busy="applyingAll">Alle übernehmen</button>
+        </footer>
+      </article>
+    </div>
   </main>
 
   <script src="/js/api.js"></script>
@@ -235,6 +309,7 @@
   <script src="/js/formula-eval.js"></script>
   <script src="/js/components/product-form-modal.js"></script>
   <script src="/js/components/price-strategy-modal.js"></script>
+  <script src="/js/components/competitor-price-modal.js"></script>
   <script>
     function productsApp() {
       return {
@@ -243,7 +318,9 @@
         error: '',
         sim: { hour: 12, day: 15 },
         paused: true, // Simulation startet angehalten; User startet per ▶.
+        turbo: false, // 3x-Geschwindigkeit
         _tickHandle: null,
+        _tickMs: 2000, // Default-Interval; im Turbo-Modus 666 ms.
 
         async load() {
           this.loading = true;
@@ -253,15 +330,16 @@
             const items = res.items || res || [];
             items.forEach((p) => this._initRuntime(p));
             this.products = items;
-            if (this._tickHandle) clearInterval(this._tickHandle);
-            this._tickHandle = setInterval(() => this.tick(), 2000);
-            // Nav-Link 'Produkt hinzufuegen' von anderen Seiten aus:
-            // '?create=1' triggert das Modal nach dem Laden.
-            if (new URLSearchParams(location.search).get('create') === '1') {
-              setTimeout(
-                () => window.dispatchEvent(new CustomEvent('open-product-form')),
-                50,
-              );
+            this._restartTicker();
+            // Query-Parameter fuer Deep-Links aus der Navigation anderer Seiten:
+            //   ?create=1     -> Produkt-hinzufuegen-Modal
+            //   ?competitor=1 -> Wettbewerbspreis-KI-Modal
+            const params = new URLSearchParams(location.search);
+            if (params.get('create') === '1') {
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-product-form')), 50);
+              history.replaceState({}, '', location.pathname);
+            } else if (params.get('competitor') === '1') {
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-competitor-modal')), 50);
               history.replaceState({}, '', location.pathname);
             }
           } catch (e) {
@@ -278,6 +356,17 @@
 
         togglePause() {
           this.paused = !this.paused;
+        },
+
+        toggleTurbo() {
+          this.turbo = !this.turbo;
+          this._tickMs = this.turbo ? 666 : 2000;
+          this._restartTicker();
+        },
+
+        _restartTicker() {
+          if (this._tickHandle) clearInterval(this._tickHandle);
+          this._tickHandle = setInterval(() => this.tick(), this._tickMs);
         },
 
         tick() {

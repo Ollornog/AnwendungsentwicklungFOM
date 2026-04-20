@@ -11,11 +11,14 @@ from app.llm import (
     LLMResponseError,
     LLMUnavailableError,
     preview_strategy_prompt,
+    suggest_competitor_prices,
     suggest_strategy,
 )
 from app.models import PricingStrategy, Product, User
 from app.services import app_settings as app_settings_svc
 from app.schemas import (
+    CompetitorPriceItem,
+    CompetitorPricesResponse,
     ProductCreate,
     ProductList,
     ProductOut,
@@ -76,6 +79,70 @@ def create_product(
     return product
 
 
+# Wichtig: dieser Endpoint muss VOR den {product_id}-Routen registriert
+# sein, sonst interpretiert FastAPI "competitor-prices" als UUID-Parameter
+# und gibt 422 zurueck.
+@router.post("/competitor-prices/suggest", response_model=CompetitorPricesResponse)
+def suggest_competitor_prices_endpoint(
+    user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+) -> CompetitorPricesResponse:
+    """Laesst die KI fuer jedes Produkt einen Wettbewerbspreis schaetzen.
+
+    Fuer die Demo genuegt eine plausible KI-Schaetzung; tatsaechliche Preis-
+    recherche ist nicht noetig. Der User uebernimmt die Vorschlaege dann
+    selbst pro Produkt (Human-in-the-Loop).
+    """
+    products = db.scalars(
+        select(Product).where(Product.owner_id == user.id).order_by(Product.name)
+    ).all()
+    if not products:
+        return CompetitorPricesResponse(items=[])
+
+    payload = [
+        {
+            "id": str(p.id),
+            "name": p.name,
+            "category": p.category,
+            "cost_price": str(p.cost_price),
+            "current_competitor": (
+                str(p.competitor_price) if p.competitor_price is not None else None
+            ),
+            "context": p.context or "",
+        }
+        for p in products
+    ]
+    api_key = app_settings_svc.gemini_api_key(db)
+    try:
+        llm_items = suggest_competitor_prices(payload, api_key=api_key)
+    except LLMUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except LLMResponseError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    # KI-Antwort auf unsere Produkte mappen; Eintraege ohne Match
+    # ignorieren, Reihenfolge stabil nach Produktname.
+    by_id = {str(p.id): p for p in products}
+    matched_items: list[CompetitorPriceItem] = []
+    seen: set[str] = set()
+    for it in llm_items:
+        product = by_id.get(it.product_id)
+        if product is None or it.product_id in seen:
+            continue
+        seen.add(it.product_id)
+        matched_items.append(
+            CompetitorPriceItem(
+                id=product.id,
+                name=product.name,
+                category=product.category,
+                current_competitor_price=product.competitor_price,
+                suggested_price=it.price,
+                reasoning=it.reasoning,
+            )
+        )
+    return CompetitorPricesResponse(items=matched_items)
+
+
 @router.get("/{product_id}", response_model=ProductOut)
 def get_product(
     product_id: uuid.UUID,
@@ -128,6 +195,38 @@ def upsert_strategy(
         product.strategy.config = payload.config
     db.commit()
     db.refresh(product.strategy)
+
+    # Auto-Snapshot in PriceHistory: dokumentiert zeitlich, wann welche
+    # Strategie aktiv wurde und welchen Preis sie bei Default-Runtime
+    # (hour=0, day=1, stock=start_stock) geliefert haette. Fehler im
+    # Snapshot (Config-Fehler, LLM nicht erreichbar) blockieren den
+    # Strategie-Save nicht – es ist ein Nice-to-have-Audit-Trail.
+    try:
+        from app.models import PriceHistory
+        from app.services import app_settings as _app_settings
+        from app.strategies import compute_price
+
+        api_key = _app_settings.gemini_api_key(db) if payload.kind == "llm" else None
+        result = compute_price(
+            product, payload.kind, payload.config, runtime=None, api_key=api_key
+        )
+        db.add(
+            PriceHistory(
+                product_id=product.id,
+                user_id=user.id,
+                strategy=payload.kind,
+                price=result.price,
+                currency=result.currency,
+                is_llm_suggestion=result.is_llm_suggestion,
+                inputs=result.inputs,
+                reasoning=(result.reasoning or "") + " · Snapshot bei Strategie-Aenderung",
+            )
+        )
+        db.commit()
+    except Exception:
+        # Snapshot ist optional – Save-Flow nicht sprengen.
+        db.rollback()
+
     return product.strategy
 
 
