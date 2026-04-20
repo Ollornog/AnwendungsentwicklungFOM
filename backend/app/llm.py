@@ -217,7 +217,11 @@ def _strategy_prompt(
         base += (
             "\nSchlage eine Preisformel vor. Erlaubte Variablen: "
             f"{vars_list}. "
-            "weekday ist 1=Montag, …, 7=Sonntag. `pi` ist die Kreiszahl.\n"
+            "weekday ist 1=Montag, …, 7=Sonntag. `pi` ist die Kreiszahl. "
+            "Hinweis: die Demo-Simulation rechnet mit einem Monat von "
+            "genau 28 Tagen (day laeuft zyklisch von 1 bis 28), damit "
+            "Wochentage aufgehen. Bitte in periodischen Formeln 28 als "
+            "Monatslaenge verwenden, nicht 30 oder 31.\n"
             "Erlaubte Operatoren: + - * / ** % ( ) sowie die Vergleiche "
             "< <= > >= == != (ein Vergleich ergibt 1 oder 0 und kann "
             "multipliziert werden, z. B. `(hour >= 18) * 2` als Abendaufschlag "
