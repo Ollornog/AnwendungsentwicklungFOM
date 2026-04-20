@@ -39,9 +39,9 @@ def build_variables(product: Product, runtime: dict | None) -> dict[str, Any]:
         "hour": 0 if hour is None else hour,
         "day": day,
         "weekday": weekday,
-        # Nachfrage-Faktor 0..100; 50 = normal. Fuer Formeln verfuegbar,
+        # Nachfrage-Faktor 0..2; 1 = normal. Fuer Formeln verfuegbar,
         # im Frontend zusaetzlich als Multiplikator des Lagerverbrauchs.
-        "demand": 50 if demand is None else int(demand),
+        "demand": Decimal("1") if demand is None else Decimal(str(demand)),
         # Konstante fuer periodische Formeln (sin/cos)
         "pi": _PI,
     }

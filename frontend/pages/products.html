@@ -91,10 +91,10 @@
                   <small><span x-text="Math.round(p._current_stock)"></span> / <span x-text="p.stock"></span></small>
                 </td>
                 <td style="min-width:7rem">
-                  <input type="range" min="0" max="100" x-model.number="p._demand"
-                         :title="`${p._demand}% (Basis ${p.monthly_demand}/Mon)`">
+                  <input type="range" min="0" max="2" step="0.01" x-model.number="p._demand"
+                         :title="`Faktor ${Number(p._demand).toFixed(2)} (Basis ${p.monthly_demand}/Mon)`">
                   <small>
-                    <span x-text="p._demand"></span>% ·
+                    <span x-text="Number(p._demand).toFixed(2)"></span> ·
                     <span class="muted" x-text="p.monthly_demand + '/Mon'"></span>
                   </small>
                 </td>
@@ -400,8 +400,8 @@
 
         _initRuntime(p) {
           p._current_stock = Number(p.stock) || 0;
-          // 50 = neutraler Nachfrage-Faktor; 0..100 ist der UI-Slider.
-          p._demand = 50;
+          // Nachfrage-Faktor: 0..2, Default 1 (neutral).
+          p._demand = 1;
         },
 
         togglePause() {
@@ -430,11 +430,11 @@
           }
           // Lagerverbrauch pro Stunde = Basis-Verbrauch pro Stunde
           // (monthly_demand / (28*24)) multipliziert mit dem Nachfrage-
-          // Faktor: demand/50 ergibt 0x bei 0, 1x bei 50, 2x bei 100.
+          // Faktor demand (0..2). 0 = kein Verbrauch, 1 = normal, 2 = doppelt.
           // Auto-Refill auf Lagergroesse, wenn der Bestand 0 erreicht.
           for (const p of this.products) {
             const baseHourly = (Number(p.monthly_demand) || 0) / (28 * 24);
-            const factor = (Number(p._demand) || 0) / 50;
+            const factor = Number.isFinite(Number(p._demand)) ? Number(p._demand) : 1;
             let next = Number(p._current_stock) - baseHourly * factor;
             if (!Number.isFinite(next) || next <= 0) next = Number(p.stock) || 0;
             p._current_stock = next;
@@ -478,7 +478,7 @@
             hour: Number(this.sim.hour) || 0,
             day: day,
             weekday: ((day - 1) % 7) + 1,
-            demand: Number(p._demand != null ? p._demand : 50),
+            demand: Number(p._demand != null ? p._demand : 1),
           };
         },
 

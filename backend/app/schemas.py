@@ -111,9 +111,9 @@ class PriceRequest(BaseModel):
     hour: int | None = Field(default=None, ge=0, le=23)
     day: int | None = Field(default=None, ge=1, le=31)
     current_stock: int | None = Field(default=None, ge=0)
-    # 0 = keine Nachfrage, 50 = normal, 100 = doppelt. Multipliziert
+    # Nachfrage-Faktor: 0 = keine, 1 = normal, 2 = doppelt. Multipliziert
     # im Frontend den Lagerverbrauch; in Formeln als Variable `demand`.
-    demand: int | None = Field(default=None, ge=0, le=100)
+    demand: Decimal | None = Field(default=None, ge=0, le=2)
 
 
 class PriceSuggestionOut(BaseModel):

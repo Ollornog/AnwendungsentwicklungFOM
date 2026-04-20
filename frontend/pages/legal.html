@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-  <nav class="container" x-data="{}">
+  <nav class="container" x-data="{}" x-init="$store.auth.ensureMe()">
     <ul><li>
-      <a href="/" class="brand">
+      <a href="/pages/products.html" class="brand">
         <img src="/favicon.svg" alt="">
         <strong>Preisoptimierung</strong>
       </a>
@@ -20,7 +20,18 @@
       <li><a href="#impressum">Impressum</a></li>
       <li><a href="#datenschutz">Datenschutz</a></li>
       <li><a href="#betroffenenrechte">Rechte</a></li>
-      <li><a href="/">Login</a></li>
+      <template x-if="$store.auth.user">
+        <li><a href="/pages/products.html">Produkte</a></li>
+      </template>
+      <template x-if="$store.auth.user">
+        <li><a href="/pages/settings.html">Einstellungen</a></li>
+      </template>
+      <template x-if="$store.auth.user">
+        <li><button class="secondary outline" @click="$store.auth.logout()">Logout</button></li>
+      </template>
+      <template x-if="$store.auth.ready && !$store.auth.user">
+        <li><a href="/">Login</a></li>
+      </template>
     </ul>
   </nav>
 
@@ -189,6 +200,7 @@
   </footer>
 
   <script src="/js/api.js"></script>
+  <script src="/js/store.js"></script>
   <script>
     function legalPage() {
       return {

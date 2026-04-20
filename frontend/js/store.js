@@ -9,8 +9,10 @@ document.addEventListener('alpine:init', () => {
      */
     async ensureMe() {
       if (this.ready) return this.user;
+      // silent401: auf oeffentlichen Seiten (Impressum/Datenschutz) darf ein
+      // fehlender Login nicht zum automatischen Redirect fuehren.
       try {
-        this.user = await window.api.get('/auth/me');
+        this.user = await window.api.get('/auth/me', { silent401: true });
       } catch (_) {
         this.user = null;
       }

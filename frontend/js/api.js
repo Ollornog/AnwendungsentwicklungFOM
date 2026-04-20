@@ -1,7 +1,8 @@
 (function () {
   const API_BASE = '/api/v1';
 
-  async function request(method, path, body) {
+  async function request(method, path, body, opts) {
+    const options = opts || {};
     const res = await fetch(`${API_BASE}${path}`, {
       method,
       credentials: 'include',
@@ -10,7 +11,10 @@
     });
 
     if (res.status === 401) {
-      if (location.pathname !== '/' && location.pathname !== '/index.html') {
+      // `silent401`: Rufer moechte selbst entscheiden, was bei "nicht
+      // angemeldet" passiert (z. B. oeffentliche Seiten). Default ist
+      // der automatische Redirect zur Login-Seite.
+      if (!options.silent401 && location.pathname !== '/' && location.pathname !== '/index.html') {
         location.href = '/';
       }
       throw new Error('Nicht authentifiziert');
@@ -30,9 +34,9 @@
   }
 
   window.api = {
-    get: (p) => request('GET', p),
-    post: (p, b) => request('POST', p, b),
-    put: (p, b) => request('PUT', p, b),
-    del: (p) => request('DELETE', p),
+    get: (p, opts) => request('GET', p, undefined, opts),
+    post: (p, b, opts) => request('POST', p, b, opts),
+    put: (p, b, opts) => request('PUT', p, b, opts),
+    del: (p, opts) => request('DELETE', p, undefined, opts),
   };
 })();

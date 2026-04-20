@@ -14,7 +14,7 @@ document.addEventListener('alpine:init', () => {
     { key: 'day',              label: 'Tag im Monat (1–28)',        range: [1, 28, 1] },
     { key: 'weekday',          label: 'Wochentag (1–7)',            range: [1, 7, 1] },
     { key: 'stock',            label: 'Lagerbestand (0 – Max)',     range: 'stock' },
-    { key: 'demand',           label: 'Nachfrage-Faktor (0–100)',   range: [0, 100, 5] },
+    { key: 'demand',           label: 'Nachfrage-Faktor (0 – 2)',   range: [0, 2, 0.05] },
     { key: 'monthly_demand',   label: 'Verbrauch / Monat (0–500)',  range: [0, 500, 10] },
     { key: 'cost_price',       label: 'Einkaufspreis (± 50 %)',     range: 'cost' },
     { key: 'competitor_price', label: 'Wettbewerbspreis (± 50 %)',  range: 'cost' },
@@ -69,7 +69,7 @@ document.addEventListener('alpine:init', () => {
         hour: Number(this.sim.hour) || 0,
         day: day,
         weekday: ((day - 1) % 7) + 1,
-        demand: Number(p._demand != null ? p._demand : 50),
+        demand: Number(p._demand != null ? p._demand : 1),
       };
     },
 
@@ -125,8 +125,12 @@ document.addEventListener('alpine:init', () => {
         }
       } else {
         const [mn, mx, st] = opt.range;
-        for (let x = mn; x <= mx; x += st) {
-          labels.push(String(x));
+        // Float-Arithmetik: saubere Labels via toFixed(2) fuer Nicht-Ganzzahl-Schrittweite.
+        const fmt = Number.isInteger(st) ? (v) => String(v) : (v) => v.toFixed(2);
+        for (let i = 0; ; i++) {
+          const x = mn + i * st;
+          if (x > mx + 1e-9) break;
+          labels.push(fmt(x));
           data.push(this._compute({ [this.variable]: x }));
         }
       }
