@@ -4,7 +4,11 @@ Rudimentaer fuer die Demo: der eingeloggte Admin kann weitere Nutzer
 anlegen, Passwoerter aendern und User loeschen. Der 'admin'-Account ist
 geschuetzt und kann weder bearbeitet noch geloescht werden.
 """
-from __future__ import annotations
+# `from __future__ import annotations` absichtlich NICHT: sonst wird
+# aus `-> None` ein String, den FastAPI zu `type(None)` aufloest. Die
+# Klasse NoneType ist truthy, wodurch FastAPI 0.115 bei Status 204 die
+# Assertion "Status code 204 must not have a response body" wirft und
+# der Service beim Start crasht.
 
 import uuid
 from typing import Annotated
