@@ -63,16 +63,28 @@ document.addEventListener('alpine:init', () => {
     },
     {
       kind: 'fn',
-      label: 'Funktionen',
+      label: 'Mathe',
       tokens: [
         { label: 'sqrt(', insert: 'sqrt(' },
         { label: 'pow(', insert: 'pow(' },
         { label: 'abs(', insert: 'abs(' },
         { label: 'min(', insert: 'min(' },
         { label: 'max(', insert: 'max(' },
+      ],
+    },
+    {
+      kind: 'fn',
+      label: 'Rundung',
+      tokens: [
         { label: 'round(', insert: 'round(' },
         { label: 'floor(', insert: 'floor(' },
         { label: 'ceil(', insert: 'ceil(' },
+      ],
+    },
+    {
+      kind: 'fn',
+      label: 'Zyklisch',
+      tokens: [
         { label: 'mod(', insert: 'mod(' },
         { label: 'sin(', insert: 'sin(' },
         { label: 'cos(', insert: 'cos(' },
