@@ -202,9 +202,11 @@ install_packages() {
     systemd-resolved
   )
   # certbot + nginx-Plugin erlauben das spaetere HTTPS-Enable via
-  # Einstellungsseite; gehen ins Paket-Set nur, wenn wir nginx ueberhaupt
-  # installieren.
-  if $WITH_NGINX; then pkgs+=(nginx certbot python3-certbot-nginx); fi
+  # Einstellungsseite; `sudo` brauchen wir, damit der Backend-User
+  # das HTTPS-Helper-Skript mit einem ganz schmalen sudoers-Eintrag
+  # ausfuehren kann. Alle drei landen im Paket-Set nur, wenn wir nginx
+  # ueberhaupt installieren.
+  if $WITH_NGINX; then pkgs+=(nginx certbot python3-certbot-nginx sudo); fi
   apt-get install -y --no-install-recommends "${pkgs[@]}"
 
   # UTF-8-Locale sicherstellen (Cloud-Images laufen gern nur mit POSIX).
@@ -401,6 +403,11 @@ install_https_helper() {
   $WITH_NGINX || return
   log "HTTPS: certbot-Helper + sudoers-Regel installieren"
   install -m 0755 "$APP_DIR/deploy/preisopt-https-enable" /usr/local/bin/preisopt-https-enable
+  # /etc/sudoers.d existiert nur, wenn das `sudo`-Paket installiert ist.
+  # Bei minimalem Debian fehlte der Ordner und `install` schlug fehl –
+  # install_packages() zieht sudo nach, hier stellen wir sicher, dass
+  # das Ziel-Verzeichnis mit den richtigen Rechten da ist.
+  install -d -o root -g root -m 0750 /etc/sudoers.d
   install -m 0440 "$APP_DIR/deploy/sudoers.d-preisopt" /etc/sudoers.d/preisopt
   # validiert die Syntax; Fehler abbrechen (lieber jetzt als spaeter
   # beim Systemstart mit kaputtem sudoers).
