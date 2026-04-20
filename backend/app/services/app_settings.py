@@ -13,6 +13,8 @@ from app.config import get_settings
 from app.models import AppSetting
 
 GEMINI_API_KEY = "gemini_api_key"
+HTTPS_ENABLED = "https_enabled"  # "1" wenn aktiv, sonst nicht gesetzt
+HTTPS_DOMAIN = "https_domain"
 
 
 def get(db: Session, key: str) -> str | None:

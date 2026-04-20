@@ -1,0 +1,7 @@
+# Erlaubt dem Backend-Service-User genau EINEN Befehl als root:
+# das HTTPS-Aktivierungsskript. Ohne dieses Sudoers-File kann die
+# Einstellungsseite keine Zertifikate holen.
+#
+# Pfad exakt. Wildcards oder zusaetzliche Kommandos absichtlich nicht
+# hinzufuegen, damit die Angriffsflaeche minimal bleibt.
+preisopt ALL=(root) NOPASSWD: /usr/local/bin/preisopt-https-enable

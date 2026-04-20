@@ -201,7 +201,10 @@ install_packages() {
     postgresql postgresql-contrib
     systemd-resolved
   )
-  if $WITH_NGINX; then pkgs+=(nginx); fi
+  # certbot + nginx-Plugin erlauben das spaetere HTTPS-Enable via
+  # Einstellungsseite; gehen ins Paket-Set nur, wenn wir nginx ueberhaupt
+  # installieren.
+  if $WITH_NGINX; then pkgs+=(nginx certbot python3-certbot-nginx); fi
   apt-get install -y --no-install-recommends "${pkgs[@]}"
 
   # UTF-8-Locale sicherstellen (Cloud-Images laufen gern nur mit POSIX).
@@ -391,6 +394,19 @@ install_nginx() {
   systemctl reload nginx
 }
 
+install_https_helper() {
+  # Helper + sudoers ermoeglichen, dass der Backend-User `preisopt` das
+  # HTTPS-Aktivieren-Skript mit root-Rechten starten kann (einziger
+  # erlaubter Befehl, siehe deploy/sudoers.d-preisopt).
+  $WITH_NGINX || return
+  log "HTTPS: certbot-Helper + sudoers-Regel installieren"
+  install -m 0755 "$APP_DIR/deploy/preisopt-https-enable" /usr/local/bin/preisopt-https-enable
+  install -m 0440 "$APP_DIR/deploy/sudoers.d-preisopt" /etc/sudoers.d/preisopt
+  # validiert die Syntax; Fehler abbrechen (lieber jetzt als spaeter
+  # beim Systemstart mit kaputtem sudoers).
+  visudo -cf /etc/sudoers.d/preisopt
+}
+
 smoke_test() {
   log "Smoke-Test: Health-Endpoint"
   local target
@@ -465,6 +481,7 @@ main() {
   run_seed
   install_systemd
   install_nginx
+  install_https_helper
   smoke_test
   summary
 }

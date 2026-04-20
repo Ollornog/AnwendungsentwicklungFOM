@@ -78,6 +78,43 @@
       </ul>
     </article>
 
+    <article x-data="httpsAdmin()" x-init="load()">
+      <header><strong>HTTPS (Let's Encrypt)</strong></header>
+      <p class="muted" x-show="!https.loading">
+        Status:
+        <template x-if="https.enabled">
+          <span><strong>aktiv</strong> für <code x-text="https.domain"></code></span>
+        </template>
+        <template x-if="!https.enabled">
+          <span><strong>nicht aktiv</strong> – die Seite läuft über HTTP.</span>
+        </template>
+      </p>
+      <p class="muted" style="font-size:0.85rem">
+        Voraussetzungen: DNS-A-Record zeigt auf diesen Server, Port 80 und 443
+        sind aus dem Internet erreichbar. Beim Klick holt das Backend per
+        <code>certbot --nginx</code> ein Zertifikat und stellt nginx auf
+        HTTPS um.
+      </p>
+      <form @submit.prevent="enable">
+        <label>Domain
+          <input type="text" x-model="form.domain"
+                 placeholder="preisopt.example.com"
+                 pattern="[A-Za-z0-9][A-Za-z0-9.\-]*\.[A-Za-z]{2,}"
+                 required>
+        </label>
+        <small class="error" x-show="https.error" x-text="https.error"></small>
+        <template x-if="https.lastOutput">
+          <textarea readonly rows="6" class="ai-output" x-text="https.lastOutput"></textarea>
+        </template>
+        <footer>
+          <button type="submit" :disabled="https.busy || !form.domain"
+                  :aria-busy="https.busy">
+            <span x-text="https.enabled ? 'Neu aktivieren / Domain wechseln' : 'HTTPS aktivieren'"></span>
+          </button>
+        </footer>
+      </form>
+    </article>
+
     <article>
       <header><strong>Passwort ändern</strong></header>
       <form @submit.prevent="changePassword">
@@ -298,6 +335,51 @@
     }
   </script>
   <script>
+    function httpsAdmin() {
+      return {
+        https: { loading: false, enabled: false, domain: null, busy: false, error: '', lastOutput: '' },
+        form: { domain: '' },
+
+        async load() {
+          this.https.loading = true;
+          try {
+            const res = await window.api.get('/settings/https');
+            this.https.enabled = !!res.enabled;
+            this.https.domain = res.domain || null;
+            if (this.https.domain) this.form.domain = this.https.domain;
+          } catch (e) {
+            this.https.error = e.message;
+          } finally {
+            this.https.loading = false;
+          }
+        },
+
+        async enable() {
+          if (!this.form.domain) return;
+          if (!confirm(
+            `HTTPS für "${this.form.domain}" aktivieren?\n\n` +
+            `Das Backend ruft certbot auf und ändert die nginx-Konfiguration. ` +
+            `DNS und Port 80/443 müssen erreichbar sein.`
+          )) return;
+          this.https.busy = true;
+          this.https.error = '';
+          this.https.lastOutput = '';
+          try {
+            const res = await window.api.post('/settings/https/enable', {
+              domain: this.form.domain,
+            });
+            this.https.enabled = !!res.enabled;
+            this.https.domain = res.domain;
+            this.https.lastOutput = res.output || '';
+          } catch (e) {
+            this.https.error = e.message;
+          } finally {
+            this.https.busy = false;
+          }
+        },
+      };
+    }
+
     function userAdmin() {
       return {
         users: { loading: false, items: [], error: '', message: '' },

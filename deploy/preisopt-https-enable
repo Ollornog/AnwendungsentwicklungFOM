@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# preisopt-https-enable <domain>
+#
+# Wird mit sudo vom Backend-User `preisopt` aufgerufen (siehe
+# /etc/sudoers.d/preisopt). Setzt in der nginx-Site den server_name auf
+# <domain>, laesst sich das Zertifikat von Let's Encrypt per certbot-nginx
+# holen und konfiguriert HTTP -> HTTPS-Redirect.
+#
+# Voraussetzungen (ggf. vorher pruefen):
+#   - DNS-A-Record zeigt auf diesen Server
+#   - Port 80 und 443 sind aus dem Internet erreichbar
+#   - Paket `python3-certbot-nginx` installiert (install.sh erledigt das)
+set -euo pipefail
+
+DOMAIN="${1:-}"
+
+if [[ -z "$DOMAIN" ]]; then
+  echo "Usage: $0 <domain>" >&2
+  exit 2
+fi
+
+# einfache Domain-Validierung: verhindert Injection ins sed/certbot-argv
+if [[ ! "$DOMAIN" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,}$ ]]; then
+  echo "Ungueltige Domain: $DOMAIN" >&2
+  exit 3
+fi
+
+SITE_FILE=/etc/nginx/sites-available/preisopt
+if [[ ! -f "$SITE_FILE" ]]; then
+  echo "nginx-Site $SITE_FILE nicht gefunden. Erst install.sh laufen lassen." >&2
+  exit 4
+fi
+
+# server_name in der bestehenden Site auf die gewuenschte Domain heben.
+# Pattern: die erste server_name-Zeile (Default-HTTP-Server) wird angepasst.
+sed -i -E "0,/^(\s*server_name\s+).*/ s//\1${DOMAIN};/" "$SITE_FILE"
+
+nginx -t
+systemctl reload nginx
+
+# certbot-nginx holt das Zertifikat und aktualisiert die Config
+# (fuegt listen 443 ssl, zertifikatspfade und optional den Redirect ein).
+certbot --nginx \
+  --non-interactive --agree-tos \
+  --register-unsafely-without-email \
+  --redirect \
+  -d "$DOMAIN"
+
+systemctl reload nginx
+
+echo "HTTPS aktiviert fuer ${DOMAIN}."

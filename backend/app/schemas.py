@@ -188,6 +188,25 @@ class DatabaseResetResponse(BaseModel):
     total_configured: int
 
 
+class HTTPSStatus(BaseModel):
+    enabled: bool
+    domain: str | None = None
+
+
+class HTTPSEnableRequest(BaseModel):
+    domain: str = Field(
+        min_length=4,
+        max_length=253,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,}$",
+    )
+
+
+class HTTPSEnableResponse(BaseModel):
+    enabled: bool
+    domain: str
+    output: str  # gekuerzter Klartext von certbot / Helper fuer Troubleshooting
+
+
 class HistoryItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
