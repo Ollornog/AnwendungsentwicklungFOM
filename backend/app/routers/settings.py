@@ -42,7 +42,7 @@ def _build_view(db: Session) -> AppSettingsOut:
 
 @router.get("", response_model=AppSettingsOut)
 def get_settings_view(
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AppSettingsOut:
     return _build_view(db)
@@ -51,7 +51,7 @@ def get_settings_view(
 @router.put("", response_model=AppSettingsOut)
 def update_settings(
     payload: AppSettingsUpdate,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(get_current_admin)],
     db: Annotated[Session, Depends(get_db)],
 ) -> AppSettingsOut:
     if payload.gemini_api_key is not None:

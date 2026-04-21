@@ -13,8 +13,9 @@ wichtigsten Endpoints zusammen.
 - **Rate Limit:** jeder authentifizierte Aufruf (außer Auth- und
   Settings-Endpoints) zählt auf das Tageskontingent des Users.
   Standard 50/Tag, Admin 200/Tag; überschritten → `429`.
-- **Admin-Guards:** `/users`, `/settings/https*` und
-  `/settings/rate-limit*` sind nur für den Account `admin` zugänglich.
+- **Admin-Guards:** `/users`, `GET`/`PUT /settings` (Gemini-Key),
+  `/settings/https*` und `/settings/rate-limit*` sind nur für den
+  Account `admin` zugänglich.
 - **Fehlerschema:** Pydantic-Errors als `{"detail": "..."}`; bei
   Validierungsfehlern das FastAPI-`422`-Schema.
 
@@ -64,8 +65,8 @@ wichtigsten Endpoints zusammen.
 
 | Methode | Pfad | Zweck | Admin-only |
 | --- | --- | --- | --- |
-| GET | `/settings` | Gemini-Key-Status | – |
-| PUT | `/settings` | Gemini-Key setzen/löschen | – |
+| GET | `/settings` | Gemini-Key-Status | ja |
+| PUT | `/settings` | Gemini-Key setzen/löschen | ja |
 | POST | `/settings/reset-database` | Eigene Daten auf Seed-Stand | – |
 | GET | `/settings/https` | HTTPS-Status | ja |
 | POST | `/settings/https/enable` | Let's-Encrypt-Zertifikat holen | ja |

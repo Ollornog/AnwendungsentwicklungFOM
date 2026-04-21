@@ -31,11 +31,11 @@
     <p class="muted" x-show="$store.auth.user" style="font-size:0.85rem">
       Angemeldet als <strong x-text="$store.auth.user?.username"></strong>
       <template x-if="!$store.auth.isAdmin()">
-        <span> · Die Bereiche HTTPS, Rate Limiting und Benutzerverwaltung sind nur für <code>admin</code> sichtbar.</span>
+        <span> · API-Key, HTTPS, Rate Limiting und Benutzerverwaltung sind nur für <code>admin</code> sichtbar.</span>
       </template>
     </p>
 
-    <article>
+    <article x-show="$store.auth.isAdmin()" x-cloak>
       <header><strong>Google Gemini API-Key</strong></header>
 
       <p class="muted" x-show="!loading">
@@ -76,7 +76,7 @@
       </form>
     </article>
 
-    <article>
+    <article x-show="$store.auth.isAdmin()" x-cloak>
       <header><strong>Hinweise</strong></header>
       <ul style="font-size:0.9rem">
         <li>Der Key wird ausschließlich serverseitig benutzt (Backend &rarr; Gemini), nie an den Browser zurückgespielt.</li>
@@ -273,6 +273,9 @@
         pw: { current: '', new1: '', new2: '', saving: false, error: '', message: '' },
 
         async load() {
+          // GET /settings ist admin-only – fuer Team-/Demo-User den Call
+          // bewusst auslassen, sonst 403 im Konsolen-Log.
+          if (!window.Alpine?.store('auth')?.isAdmin?.()) return;
           this.loading = true;
           this.error = '';
           try {

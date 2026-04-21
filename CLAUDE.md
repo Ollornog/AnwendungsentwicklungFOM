@@ -47,9 +47,9 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
    in der Tabelle `app_settings` gehalten.
 7. **Audit-Trail in der Preis-Historie** (`price_history`, append-only)
    für jede bestätigte Berechnung und jeden Strategie-Wechsel.
-8. **Admin-only** für HTTPS-Aktivierung, Rate-Limit-Konfiguration und
-   Benutzerverwaltung – per `get_current_admin` im Backend und
-   `$store.auth.isAdmin()` im Frontend.
+8. **Admin-only** für Gemini-API-Key, HTTPS-Aktivierung, Rate-Limit-
+   Konfiguration und Benutzerverwaltung – per `get_current_admin` im
+   Backend und `$store.auth.isAdmin()` im Frontend.
 9. **Rate Limiting** pro Benutzer pro Tag (Standard 50, Admin 200,
    konfigurierbar). Tabelle `api_rate_usage`.
 10. **Frontend/Backend-Trennung niemals aufweichen.** Frontend hat
