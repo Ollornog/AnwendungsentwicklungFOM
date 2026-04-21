@@ -225,7 +225,7 @@ Nicht Kern der Präsentations-Demo, aber funktional vorhanden und relevant für 
 
 ---
 
-## UC-13: Gemini-API-Key setzen
+## UC-13: Gemini-API-Key setzen (Admin-only)
 
 **Akteur:** Jeder eingeloggte Nutzer.
 **Ziel:** Den per UI hinterlegten LLM-Key setzen oder entfernen.
