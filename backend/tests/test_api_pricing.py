@@ -74,50 +74,16 @@ def test_formula_strategy_price(authed_client):
     assert body["strategy"] == "formula"
 
 
-def test_rule_strategy_history_marks_correct_kind(authed_client):
-    product = _create_product_with_strategy(
-        authed_client,
-        "rule",
-        {
-            "rules": [{"when": "stock < 10", "then": "cost_price * 1.5"}],
-            "fallback": "cost_price",
-        },
-    )
-    body = authed_client.post(f"/api/v1/products/{product['id']}/price").json()
-    assert body["price"] == "15.00"
-    confirm = authed_client.post(
-        f"/api/v1/products/{product['id']}/price/confirm",
-        json={"suggestion_token": body["suggestion_token"]},
-    )
-    assert confirm.status_code == 201
-    history = authed_client.get(f"/api/v1/products/{product['id']}/history").json()
-    assert history["items"][0]["strategy"] == "rule"
-
-
-def test_llm_strategy_sets_is_llm_suggestion(authed_client, monkeypatch):
-    from app.llm import LLMSuggestion
-
-    def fake_suggest(template, whitelist):
-        return LLMSuggestion(price=Decimal("42.00"), reasoning="weil ai")
-
-    monkeypatch.setattr("app.strategies.llm.suggest_price", fake_suggest)
-
-    product = _create_product_with_strategy(
-        authed_client, "llm", {"prompt_template": "Preis für {name}"}
-    )
-    body = authed_client.post(f"/api/v1/products/{product['id']}/price").json()
-    assert body["price"] == "42.00"
-    assert body["is_llm_suggestion"] is True
-    assert body["strategy"] == "llm"
-    assert body["reasoning"] == "weil ai"
-
-    confirm = authed_client.post(
-        f"/api/v1/products/{product['id']}/price/confirm",
-        json={"suggestion_token": body["suggestion_token"]},
-    )
-    assert confirm.status_code == 201
-    history = authed_client.get(f"/api/v1/products/{product['id']}/history").json()
-    assert history["items"][0]["is_llm_suggestion"] is True
+def test_legacy_strategy_rejected(authed_client):
+    # rule und llm sind seit Migration 0007 nicht mehr im Scope.
+    # PUT /strategy muss das klar zurueckweisen (422, Pydantic-Literal).
+    product = authed_client.post("/api/v1/products", json=_product_payload()).json()
+    for kind in ("rule", "llm"):
+        response = authed_client.put(
+            f"/api/v1/products/{product['id']}/strategy",
+            json={"kind": kind, "config": {}},
+        )
+        assert response.status_code == 422, f"{kind} sollte abgelehnt werden"
 
 
 def test_confirm_with_unknown_token_404(authed_client):
