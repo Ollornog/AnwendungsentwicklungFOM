@@ -15,6 +15,12 @@ MOCK_USERS: list[dict] = [
     {"username": "Kayathiri", "password": "Raveendran", "role": "admin"},
     {"username": "Okan", "password": "Baykal", "role": "admin"},
     {"username": "Sven", "password": "Schlickewei", "role": "admin"},
+    {"username": "Tamara", "password": "Bezrodnow", "role": "admin"},
+    # Oeffentlicher Demo-Zugang (siehe README). Der bootstrap-"admin"
+    # bleibt davon unberuehrt, weil die Admin-only-Bereiche
+    # (HTTPS, Rate Limit, User-CRUD) ueber username == 'admin' geschuetzt
+    # sind – der Demo-Account sieht nur das normale Produkt-Dashboard.
+    {"username": "Demo", "password": "DemoUser", "role": "admin"},
 ]
 
 MOCK_PRODUCTS: list[dict] = [
