@@ -75,7 +75,7 @@ class ProductUpdate(BaseModel):
     monthly_demand: int | None = Field(default=None, ge=0)
 
 
-StrategyKind = Literal["fix", "formula", "rule", "llm"]
+StrategyKind = Literal["fix", "formula"]
 
 
 class StrategyOut(BaseModel):

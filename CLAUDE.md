@@ -83,7 +83,7 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
 | REST-API-Design | [`docs/api-contract.md`](./docs/api-contract.md) |
 | Datenschutz & Rechtliches | [`docs/compliance.md`](./docs/compliance.md), öffentliche Seite `/pages/legal.html` |
 | Informationssicherheit | [`docs/security.md`](./docs/security.md), interne Seite `/pages/compliance.html` |
-| Datenbankgestützte Anwendung | PostgreSQL + Alembic-Migrationen `0001–0006` |
+| Datenbankgestützte Anwendung | PostgreSQL + Alembic-Migrationen `0001–0007` |
 | KI-Integration | Gemini-Client in `app/llm.py`, Strategien in `app/strategies/`, ADR [0002](./docs/decisions/0002-llm-provider.md) |
 
 ## 6. Änderungshistorie
@@ -116,6 +116,11 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
 - 2026-04-20 – Öffentliche Seite `/pages/legal.html` (Impressum,
   Datenschutz, Betroffenenrechte, KI-Einstufung), interne Seite
   `/pages/compliance.html` (VVT, DPIA, TOMs, NIS-2, KI-Kompetenz).
+- 2026-04-20 – Scope gestrafft: nur noch zwei Strategien (`fix`,
+  `formula`). `rule` und `llm` aus Registry, Modellen, Tests und
+  Check-Constraint entfernt (Migration 0007). KI-Vorschläge bleiben
+  als Hilfswerkzeug im Strategie-Modal, erzeugen aber `fix`- oder
+  `formula`-Einträge.
 
 ## 7. Offene Punkte
 

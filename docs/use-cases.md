@@ -105,8 +105,8 @@ ohne Datenbankaufrufe.
 
 **Nachbedingung:** Kein Datenbank-Write. Der Simulator ist rein
 UI-seitig.
-**Ausnahmen:** Strategie *Regel* oder *LLM* lassen sich nicht live
-auswerten; der Graph zeigt in dem Fall einen Hinweis.
+**Ausnahmen:** keine – `fix` und `formula` sind beide clientseitig
+auswertbar.
 
 ### UC-6: Preishistorie einsehen
 

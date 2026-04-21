@@ -22,12 +22,6 @@ class LLMResponseError(RuntimeError):
 
 
 @dataclass
-class LLMSuggestion:
-    price: Decimal
-    reasoning: str
-
-
-@dataclass
 class LLMStrategySuggestion:
     """Von der KI vorgeschlagene Strategie (Fixpreis oder Formel)."""
 
@@ -45,21 +39,6 @@ class LLMCompetitorItem:
     product_id: str  # UUID als String, kommt 1:1 vom Request zurueck
     price: Decimal
     reasoning: str
-
-
-_RESPONSE_SCHEMA_HINT = (
-    'Antworte ausschließlich als JSON in der Form '
-    '{"price": <Zahl>, "currency": "EUR", "reasoning": "<kurz>"}. '
-    "Keine zusätzlichen Felder, kein Freitext um das JSON."
-)
-
-
-def _build_prompt(template: str, whitelist: dict[str, Any]) -> str:
-    try:
-        body = template.format(**whitelist)
-    except KeyError as exc:
-        raise LLMResponseError(f"Prompt-Vorlage referenziert unbekannte Variable: {exc}") from exc
-    return f"{body}\n\n{_RESPONSE_SCHEMA_HINT}"
 
 
 def _parse_json(text: str) -> dict[str, Any]:
@@ -122,28 +101,6 @@ def _generate(
     if not text:
         raise LLMResponseError("Leere Antwort vom LLM")
     return text
-
-
-def suggest_price(
-    prompt_template: str,
-    whitelist: dict[str, Any],
-    api_key: str | None = None,
-) -> LLMSuggestion:
-    prompt = _build_prompt(prompt_template, whitelist)
-    text = _generate(prompt, online=False, as_json=True, api_key=api_key)
-    payload = _parse_json(text)
-
-    price_raw = payload.get("price")
-    reasoning = payload.get("reasoning", "")
-    if price_raw is None:
-        raise LLMResponseError("LLM-Antwort ohne 'price'-Feld")
-    try:
-        price = Decimal(str(price_raw)).quantize(Decimal("0.01"))
-    except Exception as exc:
-        raise LLMResponseError(f"Ungültiger Preis vom LLM: {price_raw}") from exc
-    if price < 0:
-        raise LLMResponseError("LLM schlug negativen Preis vor")
-    return LLMSuggestion(price=price, reasoning=str(reasoning)[:500])
 
 
 _ALLOWED_FORMULA_VARS = (

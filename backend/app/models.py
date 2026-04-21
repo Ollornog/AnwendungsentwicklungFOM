@@ -88,7 +88,7 @@ class PricingStrategy(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "kind IN ('fix','formula','rule','llm')", name="pricing_strategies_kind_check"
+            "kind IN ('fix','formula')", name="pricing_strategies_kind_check"
         ),
     )
 

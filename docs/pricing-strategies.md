@@ -2,28 +2,31 @@
 
 ## Überblick
 
-Jedes Produkt hat genau eine aktive Strategie. Im UI-Scope stehen
-**zwei** Strategien zur Wahl: **Fixpreis** und **Formel**. Die Felder
-`rule` und `llm` sind im Datenbank-Check-Constraint zwar vorgesehen
-und werden im Backend auch ausgewertet (Legacy aus frühen Prototyp-
-Experimenten), im aktuellen UI aber **nicht editierbar** – Regeln
-lassen sich vollständig als Formeln darstellen (eine Kette von
-`(bedingung) * wert`-Termen), und der LLM-Pfad wird stattdessen als
-*KI-Vorschlag* in das Formel- oder Fixpreis-Modal eingebunden. Die
-bewusste Scope-Entscheidung: zwei einfache Strategien + ein
-einheitliches KI-Werkzeug.
+Jedes Produkt hat genau eine aktive Strategie aus exakt **zwei**
+möglichen Varianten:
 
-Gespeichert wird die Strategie im Produkt-Datensatz als Kombination
-aus `kind` und `config` (JSONB) in der Tabelle `pricing_strategies`
-(siehe [data-model.md](./data-model.md)).
+| Kind | Wo editierbar | Gespeichert als |
+| --- | --- | --- |
+| `fix` | Strategie-Modal → *Fixpreis* | `{"amount": "<Decimal>"}` |
+| `formula` | Strategie-Modal → *Formel* | `{"expression": "<Ausdruck>"}` |
+
+Die Konfiguration liegt als JSONB im Feld `pricing_strategies.config`
+(siehe [data-model.md](./data-model.md)). Der Check-Constraint
+erzwingt `kind IN ('fix','formula')` (Migration 0007).
+
+KI-gestützte Preis- bzw. Formelvorschläge sind **kein eigener
+Strategietyp**, sondern ein Hilfswerkzeug innerhalb des Strategie-
+Modals: die KI liefert entweder eine Fixpreis-Empfehlung oder eine
+Formel, die dann als reguläre `fix`- bzw. `formula`-Strategie
+gespeichert wird.
 
 ## Fixpreis
 
-- **Config:** `{"amount": "49.99"}` (Decimal-String, ≥ 0).
+- **Config:** `{"amount": "49.99"}` – Decimal-String, ≥ 0.
 - **Auswertung:** liefert den konfigurierten Betrag unverändert.
-- **Anwendungsfall:** statische Preise, z. B. redaktionell
-  festgelegt. Keine Abhängigkeit von Uhrzeit, Lager oder Wettbewerb.
-- **Historien-Eintrag:** `reasoning = "Fixpreis laut Konfiguration"`.
+- **Anwendungsfall:** statische Preise ohne Abhängigkeit von
+  Uhrzeit, Lager oder Wettbewerb.
+- **History-Snapshot:** `reasoning = "Fixpreis laut Konfiguration"`.
 
 ## Formel
 
@@ -31,10 +34,10 @@ aus `kind` und `config` (JSONB) in der Tabelle `pricing_strategies`
 - **Auswertung:** AST-basierter Evaluator in
   [`backend/app/strategies/evaluator.py`](../backend/app/strategies/evaluator.py).
   Kein `eval()`, keine Attribut-Zugriffe, keine Funktionsaufrufe
-  außerhalb der Whitelist.
-- **Sanity-Check:** negative Preise werden abgewiesen; `Decimal` mit
-  Quantisierung auf 0.01. Vergleiche (`<`, `>=`, `==` …) liefern 1/0
-  und dürfen multipliziert werden.
+  außerhalb der Whitelist. Vergleiche werten zu 1/0 aus und dürfen
+  multipliziert werden.
+- **Sanity-Check:** negative Preise werden abgewiesen; alle Ergebnisse
+  werden auf `Decimal("0.01")` quantisiert.
 
 ### Verfügbare Variablen
 
@@ -44,14 +47,14 @@ aus `kind` und `config` (JSONB) in der Tabelle `pricing_strategies`
 | `competitor_price` | Produkt | Wettbewerbspreis (fehlt → 0) |
 | `monthly_demand` | Produkt | Basis-Nachfrage pro Monat |
 | `start_stock` | Produkt | Lagergröße (Obergrenze) |
-| `stock` | Runtime | aktueller Lagerbestand (Sim oder Default = `start_stock`) |
+| `stock` | Runtime | aktueller Lagerbestand (Simulation oder Default = `start_stock`) |
 | `hour` | Runtime | 0–23 |
-| `day` | Runtime | 1–28 (Demo-Zyklus) |
+| `day` | Runtime | 1–28 (Demo-Monatszyklus) |
 | `weekday` | abgeleitet | `((day − 1) mod 7) + 1`, 1 = Montag |
 | `demand` | Runtime | Nachfrage-Faktor 0.00 – 2.00, Default 1 |
 | `pi` | Konstante | Kreiszahl π |
 
-### Operatoren & Funktionen
+### Operatoren und Funktionen
 
 - Arithmetik: `+ − * / ** % ( )`
 - Vergleiche: `< <= > >= == !=`
@@ -59,7 +62,7 @@ aus `kind` und `config` (JSONB) in der Tabelle `pricing_strategies`
 - Funktionen: `sqrt`, `pow`, `abs`, `min`, `max`, `round`, `floor`,
   `ceil`, `mod`, `sin`, `cos`
 
-### Beispielformeln
+### Beispiele
 
 ```
 cost_price * 1.8 + (hour >= 18) * 2
@@ -72,20 +75,25 @@ round(cost_price * (1 + 0.15 * sin(hour * 2 * pi / 24 - pi/2))
 
 ### Fehlerverhalten
 
-- **Syntaxfehler:** Evaluator wirft `ExpressionError` →
-  `StrategyError` → HTTP `422`. Die Strategie wird **nicht**
-  gespeichert; die bisherige Strategie bleibt aktiv.
-- **Unbekannte Variable:** analog `422`.
-- **Negativer Preis:** `422` mit Meldung „Berechneter Preis darf
+- **Syntax- oder Variablenfehler** → `StrategyError` → HTTP 422.
+  Die Strategie wird nicht gespeichert; die bisherige bleibt aktiv.
+- **Negativer Preis** → 422 mit Meldung „Berechneter Preis darf
   nicht negativ sein".
-- Im **Frontend-Evaluator** (Live-Vorschau) führt ein Fehler nur
-  dazu, dass die Preisspalte `—` zeigt; das Backend bleibt der
-  einzige Ort, an dem Fehler auch persistent wirken.
+- **Frontend-Live-Evaluator** zeigt bei einem Fehler `—` in der
+  Preisspalte und loggt in die Browser-Konsole; er ist rein
+  clientseitige Vorschau.
 
-## Speicherung
+## KI-Vorschlag (Hilfswerkzeug, kein Strategietyp)
 
-`pricing_strategies.kind` unterliegt dem Check-Constraint
-`IN ('fix','formula','rule','llm')`; der aktuelle UI-Scope nutzt nur
-`fix` und `formula`. Bestehende Seed-Produkte mit `rule`/`llm`
-werden im Rahmen von Migration 0005 bzw. aktualisiertem Seed
-schrittweise auf Formeln umgestellt.
+Im Strategie-Modal lässt sich per Checkbox *Per KI vorschlagen* ein
+Fixpreis- oder Formel-Vorschlag von Gemini holen:
+
+- `POST /products/{id}/strategy/prompt-preview` – Prompt erzeugen,
+  ohne die KI aufzurufen (Transparenz vor dem Klick).
+- `POST /products/{id}/strategy/suggest` – Vorschlag inkl. Begründung.
+- Der User prüft Prompt + Begründung und speichert per
+  `PUT /products/{id}/strategy` – erst dann wird die Strategie aktiv
+  und ein History-Snapshot geschrieben.
+
+Die generierte Formel durchläuft vor dem Speichern dieselbe
+Validierung wie eine manuell eingetippte Formel.

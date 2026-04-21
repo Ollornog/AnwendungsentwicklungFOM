@@ -21,9 +21,26 @@ Architektonisch ist der Anbieter austauschbar: der Aufruf ist
 komplett in `backend/app/llm.py` gekapselt, die Router arbeiten gegen
 `suggest_price` / `suggest_strategy` / `suggest_competitor_prices`.
 
+## Kostenrahmen
+
+Damit die Demo sicher innerhalb des Free-Tiers bleibt, ist das
+API-Rate-Limit der Anwendung bewusst **als Deckel für das Gemini-
+Budget** gesetzt:
+
+- Standard-Nutzer: 50 Anfragen pro Tag (Default in
+  `app_settings.rate_limit_default`).
+- Admin: 200 Anfragen pro Tag.
+- Bei vier Team-Accounts + Admin entspricht das rechnerisch maximal
+  400 LLM-Calls pro Tag – weit unterhalb der aktuell veröffentlichten
+  kostenfreien Schwellen für `gemini-2.5-flash`.
+- Der Zähler läuft pro (User, Tag) in `api_rate_usage` und wird in
+  den Einstellungen angepasst, falls die Gemini-Tier-Grenzen
+  nachgezogen werden müssen.
+
 ## Konsequenzen
 
-- ➕ Kostenloser Developer-Tier reicht für Entwicklung und Demo.
+- ➕ Kostenloser Developer-Tier reicht für Entwicklung und Demo, das
+  App-seitige Rate Limit hält den Verbrauch deckelbar.
 - ➕ `response_mime_type=application/json` + Prompt-Templates liefern
   stabil parsebare Antworten.
 - ➕ Key kann über `.env` **oder** per UI (Tabelle `app_settings`)

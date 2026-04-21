@@ -21,7 +21,22 @@ Schlickewei. Abschlusspräsentation 16.07.2026. Details zum Auftrag in
 Der Demo-Account sieht das vollständige UI; für Admin-Bereiche (HTTPS,
 Benutzer, Rate Limit) meldet sich der Lehrende unter `admin` an.
 
-## Quickstart (lokal)
+## Quickstart (Debian 12)
+
+```bash
+apt-get update && apt-get install -y git
+git clone https://github.com/Ollornog/AnwendungsentwicklungFOM
+cd AnwendungsentwicklungFOM
+./install.sh
+```
+
+Das Skript richtet Pakete, PostgreSQL, Backend-Service und nginx ein,
+installiert den HTTPS-Helper inklusive sudoers-Regel und schließt mit
+einem Health-Check. HTTPS lässt sich anschließend per UI-Klick
+(*Einstellungen → HTTPS*) über Let's Encrypt aktivieren. Details in
+[`docs/decisions/0005-deployment-debian.md`](./docs/decisions/0005-deployment-debian.md).
+
+## Installation (lokale Entwicklung)
 
 ```bash
 # 1. PostgreSQL bereitstellen
@@ -42,21 +57,6 @@ uvicorn app.main:app --reload   # http://localhost:8000
 
 Swagger-UI unter `http://localhost:8000/docs`.
 
-## Server-Installation (Debian 12)
-
-```bash
-apt-get update && apt-get install -y git
-git clone https://github.com/Ollornog/AnwendungsentwicklungFOM
-cd AnwendungsentwicklungFOM
-./install.sh
-```
-
-Das Skript richtet Pakete, PostgreSQL, Backend-Service und nginx ein,
-installiert den HTTPS-Helper inklusive sudoers-Regel und schließt mit
-einem Health-Check. HTTPS lässt sich anschließend per UI-Klick
-(*Einstellungen → HTTPS*) über Let's Encrypt aktivieren. Details in
-[`docs/decisions/0005-deployment-debian.md`](./docs/decisions/0005-deployment-debian.md).
-
 ## Tech-Stack
 
 - **Backend:** Python 3.11 + FastAPI, SQLAlchemy 2, Alembic
@@ -75,7 +75,7 @@ einem Health-Check. HTTPS lässt sich anschließend per UI-Klick
 │   │   ├── strategies/     Pricing-Strategien + AST-Evaluator
 │   │   ├── services/       app_settings, seeding
 │   │   └── main.py
-│   ├── alembic/versions/   Migrationen 0001–0006
+│   ├── alembic/versions/   Migrationen 0001–0007
 │   ├── seed.py             CLI-Seed (Admin + Mock-Produkte)
 │   └── tests/              pytest
 ├── frontend/               Statisches Frontend (von FastAPI ausgeliefert)

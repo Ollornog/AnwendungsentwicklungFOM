@@ -107,8 +107,8 @@ erDiagram
 
 ### `pricing_strategies.kind`
 
-`CHECK IN ('fix','formula','rule','llm')` – im Code implementiert,
-im UI-Scope aktuell nur `fix` und `formula` editierbar
+`CHECK IN ('fix','formula')` – mehr Varianten gibt es nicht. Migration
+0007 hat den Constraint eng gezogen und eventuelle Altlasten entfernt
 (siehe [`pricing-strategies.md`](./pricing-strategies.md)).
 
 ### `price_history`
@@ -132,3 +132,4 @@ anonymisiert sichtbar.
 | `0004_price_history_user` | `price_history.user_id` (nullable FK) |
 | `0005_drop_daily_usage` | `daily_usage` entfernt – ersetzt durch Live-Slider `demand` |
 | `0006_api_rate_usage` | Tabelle `api_rate_usage` |
+| `0007_drop_legacy_strategies` | Check-Constraint auf `('fix','formula')` eingeengt, Alt-Einträge `rule`/`llm` gelöscht |

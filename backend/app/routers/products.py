@@ -198,17 +198,15 @@ def upsert_strategy(
 
     # Auto-Snapshot in PriceHistory: dokumentiert zeitlich, wann welche
     # Strategie aktiv wurde und welchen Preis sie bei Default-Runtime
-    # (hour=0, day=1, stock=start_stock) geliefert haette. Fehler im
-    # Snapshot (Config-Fehler, LLM nicht erreichbar) blockieren den
+    # (hour=0, day=1, stock=start_stock, demand=1) geliefert haette.
+    # Fehler im Snapshot (z. B. ungueltige Formel) blockieren den
     # Strategie-Save nicht – es ist ein Nice-to-have-Audit-Trail.
     try:
         from app.models import PriceHistory
-        from app.services import app_settings as _app_settings
         from app.strategies import compute_price
 
-        api_key = _app_settings.gemini_api_key(db) if payload.kind == "llm" else None
         result = compute_price(
-            product, payload.kind, payload.config, runtime=None, api_key=api_key
+            product, payload.kind, payload.config, runtime=None
         )
         db.add(
             PriceHistory(
@@ -217,7 +215,7 @@ def upsert_strategy(
                 strategy=payload.kind,
                 price=result.price,
                 currency=result.currency,
-                is_llm_suggestion=result.is_llm_suggestion,
+                is_llm_suggestion=False,
                 inputs=result.inputs,
                 reasoning=(result.reasoning or "") + " · Snapshot bei Strategie-Aenderung",
             )
