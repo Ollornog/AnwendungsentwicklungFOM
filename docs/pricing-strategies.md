@@ -1,101 +1,91 @@
 # Preisstrategien
 
-Jedes Produkt hat genau eine aktive Strategie. In der UI lassen sich **Fix**
-und **Formel** editieren; **Regel** und **LLM** kommen aus dem Seed bzw. dem
-Backend-Evaluator und sind im gleichen Daten-Schema darstellbar.
+## Überblick
 
-## 1. Fixpreis
+Jedes Produkt hat genau eine aktive Strategie. Im UI-Scope stehen
+**zwei** Strategien zur Wahl: **Fixpreis** und **Formel**. Die Felder
+`rule` und `llm` sind im Datenbank-Check-Constraint zwar vorgesehen
+und werden im Backend auch ausgewertet (Legacy aus frühen Prototyp-
+Experimenten), im aktuellen UI aber **nicht editierbar** – Regeln
+lassen sich vollständig als Formeln darstellen (eine Kette von
+`(bedingung) * wert`-Termen), und der LLM-Pfad wird stattdessen als
+*KI-Vorschlag* in das Formel- oder Fixpreis-Modal eingebunden. Die
+bewusste Scope-Entscheidung: zwei einfache Strategien + ein
+einheitliches KI-Werkzeug.
 
-- **Konfiguration:** `{"amount": "49.99"}` (Decimal-String, ≥ 0).
-- **Auswertung:** liefert den konfigurierten Betrag.
-- **Historie:** Eintrag dokumentiert den Betrag und den Hinweis *„Fixpreis laut
-  Konfiguration"*.
+Gespeichert wird die Strategie im Produkt-Datensatz als Kombination
+aus `kind` und `config` (JSONB) in der Tabelle `pricing_strategies`
+(siehe [data-model.md](./data-model.md)).
 
-## 2. Formel
+## Fixpreis
 
-- **Konfiguration:** `{"expression": "cost_price * 1.8"}`.
-- **Auswertung:** AST-basierter Evaluator (`backend/app/strategies/evaluator.py`).
-  Kein `eval()`, keine Attribut-Zugriffe, keine Funktionsaufrufe außerhalb der
-  Whitelist.
-- **Bool-Arithmetik:** Vergleiche liefern `1`/`0` und dürfen multipliziert
-  werden. Logische Verknüpfungen `and`/`or`/`not` sind erlaubt (Python-Stil).
+- **Config:** `{"amount": "49.99"}` (Decimal-String, ≥ 0).
+- **Auswertung:** liefert den konfigurierten Betrag unverändert.
+- **Anwendungsfall:** statische Preise, z. B. redaktionell
+  festgelegt. Keine Abhängigkeit von Uhrzeit, Lager oder Wettbewerb.
+- **Historien-Eintrag:** `reasoning = "Fixpreis laut Konfiguration"`.
 
-### Erlaubte Variablen
+## Formel
 
-| Name | Bedeutung | Quelle |
+- **Config:** `{"expression": "cost_price * 1.8 + (hour >= 18) * 2"}`.
+- **Auswertung:** AST-basierter Evaluator in
+  [`backend/app/strategies/evaluator.py`](../backend/app/strategies/evaluator.py).
+  Kein `eval()`, keine Attribut-Zugriffe, keine Funktionsaufrufe
+  außerhalb der Whitelist.
+- **Sanity-Check:** negative Preise werden abgewiesen; `Decimal` mit
+  Quantisierung auf 0.01. Vergleiche (`<`, `>=`, `==` …) liefern 1/0
+  und dürfen multipliziert werden.
+
+### Verfügbare Variablen
+
+| Name | Quelle | Beschreibung |
 | --- | --- | --- |
-| `cost_price` | Einkaufspreis | Produkt (statisch) |
-| `competitor_price` | Wettbewerbspreis | Produkt (statisch) |
-| `monthly_demand` | Basis-Nachfrage pro Monat | Produkt (statisch) |
-| `start_stock` | Lagergröße (Obergrenze) | Produkt (statisch) |
-| `stock` | **aktueller** Lagerbestand | Runtime (Simulation oder Standard = Startbestand) |
-| `hour` | Uhrzeit 0–23 | Runtime |
-| `day` | Tag im Monat 1–28 (Demo-Zyklus) | Runtime |
-| `weekday` | 1=Montag … 7=Sonntag, abgeleitet aus `day` | Runtime |
-| `demand` | Nachfrage-Faktor 0.00–2.00 (1 = neutral, 2 = doppelt) | Runtime |
-| `pi` | Kreiszahl π | Konstante |
+| `cost_price` | Produkt | Einkaufspreis |
+| `competitor_price` | Produkt | Wettbewerbspreis (fehlt → 0) |
+| `monthly_demand` | Produkt | Basis-Nachfrage pro Monat |
+| `start_stock` | Produkt | Lagergröße (Obergrenze) |
+| `stock` | Runtime | aktueller Lagerbestand (Sim oder Default = `start_stock`) |
+| `hour` | Runtime | 0–23 |
+| `day` | Runtime | 1–28 (Demo-Zyklus) |
+| `weekday` | abgeleitet | `((day − 1) mod 7) + 1`, 1 = Montag |
+| `demand` | Runtime | Nachfrage-Faktor 0.00 – 2.00, Default 1 |
+| `pi` | Konstante | Kreiszahl π |
 
-Fehlen Runtime-Werte im API-Request, kommen sinnvolle Defaults zum Einsatz
-(`stock = start_stock`, `hour = 0`, `day = 1`, `demand = 1`).
+### Operatoren & Funktionen
 
-### Erlaubte Funktionen
+- Arithmetik: `+ − * / ** % ( )`
+- Vergleiche: `< <= > >= == !=`
+- Logik: `and`, `or`, `not`
+- Funktionen: `sqrt`, `pow`, `abs`, `min`, `max`, `round`, `floor`,
+  `ceil`, `mod`, `sin`, `cos`
 
-`sqrt(x)` · `pow(x, y)` · `abs(x)` · `min(a, b, …)` · `max(a, b, …)` ·
-`round(x, n=0)` · `floor(x)` · `ceil(x)` · `mod(x, n)` · `sin(x)` · `cos(x)`.
-
-Trig-Funktionen rechnen in Bogenmaß. Damit sind periodische Muster ohne
-„Knick" am Rand-Übergang (Stunde 23 → 0, Wochentag 7 → 1) möglich:
+### Beispielformeln
 
 ```
-cost_price * (1 + 0.15 * sin(hour * 2 * pi / 24 - pi/2))   # weicher Abendpeak
-cost_price * (1 + 0.08 * cos((weekday - 1) * 2 * pi / 7))  # homogene Woche
+cost_price * 1.8 + (hour >= 18) * 2
+    # 80 % Marge, ab 18 Uhr 2 € Abendaufschlag
+
+round(cost_price * (1 + 0.15 * sin(hour * 2 * pi / 24 - pi/2))
+      + (weekday == 7) * 3, 2)
+    # weicher Tagesverlauf + Sonntagsaufschlag, auf 2 Nachkommastellen
 ```
 
-### Operatoren
+### Fehlerverhalten
 
-`+` `-` `*` `/` `**` `%` Klammern. Vergleiche `<` `<=` `>` `>=` `==` `!=`.
+- **Syntaxfehler:** Evaluator wirft `ExpressionError` →
+  `StrategyError` → HTTP `422`. Die Strategie wird **nicht**
+  gespeichert; die bisherige Strategie bleibt aktiv.
+- **Unbekannte Variable:** analog `422`.
+- **Negativer Preis:** `422` mit Meldung „Berechneter Preis darf
+  nicht negativ sein".
+- Im **Frontend-Evaluator** (Live-Vorschau) führt ein Fehler nur
+  dazu, dass die Preisspalte `—` zeigt; das Backend bleibt der
+  einzige Ort, an dem Fehler auch persistent wirken.
 
-## 3. Regel
+## Speicherung
 
-- **Konfiguration:**
-  ```json
-  {
-    "rules": [
-      {"when": "stock < 20", "then": "cost_price * 2.5"},
-      {"when": "competitor_price > 0", "then": "competitor_price - 1"}
-    ],
-    "fallback": "cost_price * 2"
-  }
-  ```
-- **Auswertung:** erste passende Regel gewinnt, `fallback` ist Pflicht. Beide
-  Ausdrücke laufen durch denselben AST-Evaluator wie die Formel.
-- **Historie:** Eintrag nennt die ausgelöste Regel oder `Fallback`.
-
-## 4. LLM-basiert
-
-- **Konfiguration:** `{"prompt_template": "Schlage einen Preis für {name} …"}`.
-  Das Template nutzt Produkt-Whitelist-Felder (Name, Kategorie, Preise,
-  Kontext).
-- **Auswertung:** Backend ruft die Gemini-API auf, validiert die strukturierte
-  Antwort, quantisiert auf zwei Nachkommastellen.
-- **Fehlerbehandlung:** `LLMUnavailableError` → `503`; `LLMResponseError`
-  (ungültiges JSON, negativer Preis, etc.) → `422`.
-- **Datenschutz:** nur die whitelist-Felder landen im Prompt – keine
-  Kundendaten, siehe `docs/compliance.md`.
-
-### KI-Vorschlag für eine neue Strategie
-
-`POST /products/{id}/strategy/suggest` erzeugt einen Fixpreis- oder Formel-
-Vorschlag. Der zugehörige `POST /products/{id}/strategy/prompt-preview`
-liefert den identischen Prompt **ohne** LLM-Call – so sieht der User im
-Modal, was geschickt wird, bevor die Antwort kommt.
-
-## Gemeinsame Regeln
-
-- Negative Preise werden zurückgewiesen.
-- Vor jedem Persist läuft `Decimal.quantize(0.01)`.
-- `PriceHistory.is_llm_suggestion = true` nur, wenn der Preis tatsächlich
-  vom LLM kam.
-- Bei Strategie-Wechsel schreibt das Backend automatisch einen Snapshot in
-  die Historie, damit die Timeline der aktiven Strategien rekonstruierbar
-  ist.
+`pricing_strategies.kind` unterliegt dem Check-Constraint
+`IN ('fix','formula','rule','llm')`; der aktuelle UI-Scope nutzt nur
+`fix` und `formula`. Bestehende Seed-Produkte mit `rule`/`llm`
+werden im Rahmen von Migration 0005 bzw. aktualisiertem Seed
+schrittweise auf Formeln umgestellt.

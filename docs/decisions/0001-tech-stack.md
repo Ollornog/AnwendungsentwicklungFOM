@@ -1,31 +1,47 @@
-# ADR 0001: Tech-Stack
+# ADR-0001: Tech-Stack
 
-- **Status:** Akzeptiert (vorläufig, LLM-Anbieter offen)
-- **Datum:** 2026-04-19
-- **Entscheider:** Projektteam (4 Personen)
+**Status:** Akzeptiert (2026-04-19)
+**Datum:** 2026-04-19
 
 ## Kontext
-Wir bauen ein Web-Tool zur KI-gestützten Preisoptimierung als Studienprojekt. Der Stack muss in einem Semester von einem 4er-Team beherrschbar sein, die Modul-Pflichtthemen (DB-gestützte Anwendung, IT-Architektur, Software-Modellierung, Datenschutz, Informationssicherheit) abbilden und eine saubere Frontend/Backend-Trennung ermöglichen.
+
+Für ein Studienprojekt im Modul *Projekt Anwendungsentwicklung* mit
+vier Personen über ein Semester brauchen wir einen Tech-Stack, der
+(1) die Modul-Pflichtthemen abdeckt (DB-gestützte Anwendung, IT-
+Architektur, Software-Modellierung, Datenschutz, Informations-
+sicherheit), (2) eine klare Frontend/Backend-Trennung erlaubt und
+(3) im Team bereits vorhanden bzw. schnell erlernbar ist.
 
 ## Entscheidung
-- **Backend:** Python 3.11 mit FastAPI (Debian-12-Standard, ohne Fremdquellen).
-- **Datenbank:** PostgreSQL 16.
-- **Frontend:** HTML + JavaScript (vanilla); leichtes Framework (z. B. Alpine.js oder Vue) bei Bedarf später.
-- **LLM-API:** gängige Cloud-APIs kommen in Frage (Google, OpenAI, Anthropic); die finale Wahl wird in einem Folge-ADR (`0002-llm-provider.md`) anhand Kosten, Datenschutz und Antwortqualität getroffen.
-- **ORM/Migrations:** SQLAlchemy + Alembic (vorgeschlagen, in Folge-ADR bestätigen).
 
-## Begründung
-- **Python/FastAPI:** Im Team vorhanden, sehr gute Dokumentation, automatische OpenAPI-Generierung deckt das Pflichtthema "Doku" gut ab, schnelle Entwicklung von REST-APIs.
-- **PostgreSQL:** Robust, kostenlos, vom Modul gefordert (DB-gestützte Anwendung), starkes Tooling, Standard im professionellen Umfeld.
-- **HTML/JS ohne großes Framework:** Lernkurve niedrig, der Fokus liegt auf Backend und Datenmodell, nicht auf Frontend-Architektur.
-- **LLM extern:** keine eigene Modell-Infrastruktur; Anbieter-Auswahl wird separat entschieden, weil sie Datenschutz- und Kostenfragen aufwirft.
+- **Backend:** Python 3.11 + FastAPI (Debian-12-Standard, keine
+  Fremdquellen).
+- **ORM/Migrationen:** SQLAlchemy 2.x + Alembic.
+- **Datenbank:** PostgreSQL (ab 15, Debian-Default).
+- **Frontend:** HTML + JavaScript, Details in ADR 0004.
+- **LLM-API:** externer Cloud-Endpoint, Details in ADR 0002.
 
 ## Konsequenzen
-- Klare Frontend/Backend-Trennung wird durch die Architektur vorgegeben (siehe `docs/architecture.md`).
-- LLM-Aufrufe ausschließlich serverseitig, Keys in `.env` (siehe `docs/security.md`).
-- Folge-ADRs nötig für: LLM-Provider, Auth-Verfahren, Deployment.
+
+- ➕ Klare Schichtentrennung, saubere Testbarkeit, automatische
+  OpenAPI-Doku über FastAPI (`/docs`, `/redoc`).
+- ➕ PostgreSQL erfüllt das Modulanforderungs-Pflichtthema
+  „datenbankgestützte Anwendung" überzeugend (Constraints,
+  Transaktionen, JSONB für Strategie-Configs).
+- ➖ Python-Stack auf Debian 12 bedeutet Python 3.11 (statt 3.12/3.13);
+  für unseren Funktionsumfang irrelevant.
+- ➖ Es gibt kein etabliertes Typescript-Tooling im Frontend – dafür
+  zero-build (siehe ADR 0004).
 
 ## Alternativen
-- **Node.js/Express oder Java/Spring** statt FastAPI: höhere Komplexität bzw. Stack im Team weniger geübt.
-- **SQLite** statt PostgreSQL: einfacher, aber erfüllt das Pflichtthema "datenbankgestützte Anwendung" weniger überzeugend.
-- **React/Vue von Anfang an:** zusätzlicher Lernaufwand ohne Mehrwert für den geforderten Funktionsumfang.
+
+- **Node.js / Express oder NestJS:** zusätzlicher JavaScript-Stack,
+  bei gleichem Funktionsumfang höhere Einarbeitung im Team.
+- **Java / Spring Boot:** produktionsreif, aber im Team weniger
+  geübt, deutlich umfangreicher als nötig.
+- **Laravel (PHP):** zur Debatte gestanden (bekannt aus Praktika);
+  verworfen, weil die OpenAPI-Integration und die Pydantic-ähnliche
+  Validierung nicht so nahtlos sind wie in FastAPI.
+- **SQLite** statt PostgreSQL: einfacher, aber erfüllt das Pflicht-
+  thema „datenbankgestützte Anwendung" weniger überzeugend und
+  blockiert spätere Mehrbenutzer-Szenarien.

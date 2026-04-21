@@ -1,37 +1,60 @@
-# ADR 0005: Deployment auf Debian 12
+# ADR-0005: Deployment auf Debian 12
 
-- **Status:** Akzeptiert (Prototyp)
-- **Datum:** 2026-04-19
-- **Entscheider:** Projektteam
+**Status:** Akzeptiert (2026-04-19)
+**Datum:** 2026-04-19
 
 ## Kontext
-Für die Abschluss-Demo soll der Prototyp auf einem Debian-12-Server laufen. Gefordert: ein Skript, das Python, PostgreSQL, Webserver, Backend und Frontend in einem Rutsch einrichtet, damit jedes Team-Mitglied eine identische Umgebung hochziehen kann.
+
+Für die Abschluss-Demo braucht das Projekt ein reproduzierbares
+Deployment auf einem einfachen VPS. Gefordert: ein Bootstrap, das
+Python-Umgebung, Datenbank, Service und Reverse-Proxy in einem
+Aufruf aufsetzt, auf einer frisch installierten Debian-12-Maschine
+funktioniert und ohne Fremdquellen auskommt.
 
 ## Entscheidung
-- **Zielplattform:** Debian 12 (Bookworm), Python 3.11 aus dem Distributions-Repo.
-- **Datenbank:** PostgreSQL 16 aus `apt`, lokaler Unix-Socket-Zugriff.
-- **Prozess:** Uvicorn lauscht auf `127.0.0.1:8000`, verwaltet durch systemd (`preisopt-backend.service`).
-- **Reverse-Proxy:** nginx auf Port 80 (`deploy/nginx-preisopt.conf`). Abschaltbar per `install.sh --no-nginx`.
-- **Frontend:** FastAPI liefert `frontend/` via `StaticFiles` aus; kein separater Build.
-- **Zielverzeichnis:** `/opt/preisopt/` mit System-User `preisopt`.
-- **Bootstrap:** `install.sh` im Repo-Root, idempotent, ausgelegt auf eine **frisch installierte Debian-12-Maschine**. Einzige Voraussetzung: Root-Rechte und Internet. Das Skript installiert alle nötigen Pakete (Python-Stack, PostgreSQL, nginx, `rsync`, Build-Tools, TLS-Roots, UTF-8-Locale, TZ-Daten) aus den Debian-Repos, legt den System-User an, richtet DB, venv, Migrationen, Seed und Services ein und schließt mit einem Smoke-Test gegen den Health-Endpoint ab. Keine Fremdquellen, kein `curl | bash`.
 
-## Begründung
-- Debian 12 ist Standard in der Hochschulumgebung und bietet stabile Pakete.
-- Python 3.11 genügt für unseren Stack (FastAPI, SQLAlchemy 2.x, Pydantic 2.x). 3.12 wäre nur marginal besser, brächte aber Zusatzaufwand (Build aus Quelle oder Drittanbieter-Repo).
-- nginx + uvicorn ist das übliche Muster in Produktion und hält SSL-/Header-Handling aus dem App-Code heraus.
-- systemd-Unit mit separatem System-User, `PrivateTmp`, `ProtectHome` und `ProtectSystem=true` reduziert die Angriffsfläche. `NoNewPrivileges` bleibt bewusst deaktiviert, weil das Feature „HTTPS per Klick" einen sauber abgegrenzten sudo-Aufruf nutzt – die erlaubte Privilegierung ist über `/etc/sudoers.d/preisopt` auf genau ein Binary begrenzt.
-- Alle Secrets in `/opt/preisopt/.env` (Mode 640, Owner `preisopt`), nie im Git.
+- **Basis:** Debian 12 (Bookworm), Python 3.11 aus dem Distributions-
+  Repo, PostgreSQL aus `apt`.
+- **Backend-Prozess:** `uvicorn` auf `127.0.0.1:8000`, verwaltet von
+  systemd (`preisopt-backend.service`).
+- **Reverse-Proxy:** nginx auf Port 80 (`deploy/nginx-preisopt.conf`).
+  `@bad_gateway`-Location invalidiert das Session-Cookie bei 5xx-
+  Upstream-Fehlern.
+- **Frontend:** FastAPI liefert `frontend/` via `StaticFiles`.
+- **Zielverzeichnis:** `/opt/preisopt/` mit System-User `preisopt`.
+- **Bootstrap:** `install.sh` im Repo-Root, idempotent. Flags:
+  `--skip-seed`, `--no-nginx`, `--upgrade-system`, `--admin-username`.
+- **HTTPS:** optional per UI-Klick (Einstellungen → HTTPS), Backend
+  ruft via `sudo` genau ein Helper-Skript (`/usr/local/bin/preisopt-
+  https-enable`) auf, das `certbot --nginx` ausführt. sudoers-Regel
+  unter `/etc/sudoers.d/preisopt`, Pfad fest verdrahtet.
 
 ## Konsequenzen
-- `.env` wird vom `install.sh` beim ersten Lauf erzeugt, `SESSION_SECRET` zufällig befüllt.
-- Wiederholte Läufe des Skripts aktualisieren Code und Migrationen, ohne Daten zu verwerfen.
-- Der Installer nutzt `runuser` (Teil von `util-linux`, immer vorhanden), um interne Schritte unter dem `postgres`- bzw. `preisopt`-User laufen zu lassen. `sudo` selbst installiert das Skript zusätzlich – es wird aber nur vom Backend-Service für das HTTPS-Helper-Skript benötigt, nicht im Installer-Ablauf.
-- DNS wird über `systemd-resolved` persistent auf `1.1.1.1` und `8.8.8.8` festgenagelt (Drop-in `/etc/systemd/resolved.conf.d/preisopt-dns.conf`, `/etc/resolv.conf` als Symlink auf den Stub-Resolver). `systemd-resolved` ist enabled, die Einstellung gilt damit auch nach jedem Reboot.
-- Bei Bedarf kann das Team später auf Container / Compose umsteigen; bis dahin ist das Shell-Skript gut lesbar und ohne Zusatztooling.
-- **HTTPS optional per UI.** Die Installation liefert default nginx auf Port 80; ein angemeldeter Admin kann in den Einstellungen eine Domain eintragen und das Let's-Encrypt-Zertifikat holen lassen (`certbot --nginx` via Helper). HSTS wird absichtlich nicht gesetzt (Demo-Charakter).
+
+- ➕ Ein Kommando (`./install.sh`) bringt das System hoch, inklusive
+  Alembic-Migrationen, Seed-Daten, systemd-Unit, nginx-Site und
+  Smoke-Test.
+- ➕ Idempotenz: Wiederholter Lauf aktualisiert Code und Migrationen
+  und respektiert bestehende Passwörter (`Enter = behalten`).
+- ➕ HTTPS kann ohne SSH-Zugriff zur Laufzeit ergänzt werden; sudoers-
+  Regel ist auf ein Binary begrenzt.
+- ➖ systemd-Hardening-Flags wurden angepasst: `NoNewPrivileges=false`
+  und `ProtectSystem=true`, damit sudo + certbot funktionieren.
+  `PrivateTmp` und `ProtectHome` bleiben aktiv. Für ein produktives
+  Setup wäre eine sauberere Trennung (separater root-Service,
+  z. B. über `systemd.path`) wünschenswert.
+- ➖ HSTS wird bewusst nicht gesetzt, damit ein Rollback auf HTTP
+  ohne Browser-Cache-Streit möglich bleibt.
 
 ## Alternativen
-- **Docker-Compose:** Schöner für Reproduzierbarkeit, aber zusätzlicher Lernaufwand und Overhead. Für den Demo-Scope nicht nötig.
-- **Python 3.12 via deadsnakes/sury-Repo:** Fremdquelle und längere Installationsdauer, kein fachlicher Mehrwert.
-- **Gunicorn + Uvicorn-Worker:** Mehr Prozesse, mehr Komplexität, für ein Demo-Tool unnötig.
+
+- **Docker / Compose:** schöner für Reproduzierbarkeit, aber mehr
+  Lernaufwand und Overhead. Für den Demo-Scope nicht nötig.
+- **Gunicorn + Uvicorn-Worker:** mehr Prozesse, mehr Komplexität,
+  für den Demo-Durchsatz nicht erforderlich.
+- **HTTP-only-Deployment:** früher so beschlossen, mittlerweile
+  ersetzt durch „HTTPS optional per UI", weil Browser-HTTPS-Upgrade
+  (Chrome/Edge) ohne Zertifikat zu `ERR_CONNECTION_REFUSED` auf
+  Domains führt.
+- **Eigenes Let's-Encrypt-Skript ohne certbot:** verworfen,
+  `certbot-nginx` bringt fertig getestete nginx-Integration.

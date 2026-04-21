@@ -1,33 +1,50 @@
-# ADR 0004: Frontend-Stack
+# ADR-0004: Frontend-Stack
 
-- **Status:** Akzeptiert (Prototyp)
-- **Datum:** 2026-04-19
-- **Entscheider:** Projektteam
+**Status:** Akzeptiert (2026-04-19)
+**Datum:** 2026-04-19
 
 ## Kontext
-CLAUDE.md sah "HTML/JS (vanilla, später ggf. leichtes Framework)" vor. Für die fünf Use Cases (UC-01 bis UC-05) reichen reactive Sprinkles (Formulare, Modal-Dialoge, Listen). Ein volles SPA-Framework wäre Overkill und Klumpenrisiko im 4er-Team.
+
+Die UI deckt sechs Use Cases ab (Anlegen/Bearbeiten, Strategie,
+Live-Simulation, KI-Vorschlag, Graph, Historie). Das sind reactive
+Sprinkles – Formulare, Modal-Dialoge, Listen mit Live-Update – keine
+komplexen Routing-Szenarien. Ein volles SPA-Framework wäre Overkill
+im 4er-Team und würde eine Build-Pipeline nach sich ziehen.
 
 ## Entscheidung
-- **Markup:** HTML5.
-- **Reactivity:** Alpine.js 3, via CDN eingebunden, kein Build-Schritt.
-- **Styling:** Pico.css 2, via CDN, minimale Overrides in `frontend/css/app.css`.
-- **HTTP:** `fetch` mit einem eigenen Wrapper `frontend/js/api.js`, `credentials: 'include'`.
-- **Auslieferung:** FastAPI `StaticFiles` mit `html=True`, gleiches Origin wie die API.
 
-## Begründung
-- Zero-Build: keine npm-Toolchain, keine Version-Drift, kein CI-Aufwand für einen Prototyp.
-- Alpine liefert `x-data`, `x-show`, `x-for`, `Alpine.store` – genug für unsere Reactivity.
-- Pico bringt brauchbare Defaults auf semantischem HTML, Abschluss-Demo sieht ohne Design-Aufwand ordentlich aus.
-- Gleiches Origin vermeidet CORS-Konfiguration im Prototyp.
-- Spätere Migration zu Vue/Svelte/React ist möglich, weil wir pro Use Case eine Komponenten-Datei haben.
+- **Markup:** HTML5.
+- **Reactivity:** Alpine.js 3 via CDN, kein Build-Schritt.
+- **Styling:** Pico.css 2 via CDN, wenige Overrides in `frontend/css/app.css`.
+- **Charts:** Chart.js 4 via CDN (nur auf `graph-modal`).
+- **HTTP:** eigener Wrapper `frontend/js/api.js` über `fetch`,
+  `credentials: 'include'`.
+- **Auslieferung:** FastAPI `StaticFiles(html=True)` im gleichen
+  Origin wie die API.
 
 ## Konsequenzen
-- Verzeichnis `frontend/` im Repo, strukturiert nach Seiten und Komponenten.
-- Alle API-Calls laufen über `frontend/js/api.js` (einheitliche Fehlerbehandlung, Auth-Redirect).
-- Leitprinzip 4 (KI-Sichtbarkeit): Backend-Responses müssen `is_llm_suggestion: bool` liefern; Frontend rendert ein `badge-ai` (CSS-Klasse) an den KI-beruehrten Stellen (Strategie-Modal, History).
-- Leitprinzip 3 (Human-in-the-Loop): Preisberechnung und Bestätigung sind zwei getrennte Requests (`POST /products/{id}/price` → `POST /products/{id}/price/confirm`), nur der zweite persistiert.
+
+- ➕ **Zero-Build:** keine npm-Toolchain, keine Version-Drift, kein
+  CI-Setup – ein Entwicklungs-Check-out läuft ohne `npm install`.
+- ➕ `x-data` / `x-show` / `x-for` / `Alpine.store` reichen für
+  unsere Interaktionsmuster. Gleiches Origin vermeidet CORS-Konfig.
+- ➕ Einheitliches Fehler- und Auth-Handling zentral in `api.js`,
+  optional `silent401` für öffentliche Seiten.
+- ➕ Transparenz-Pflicht (AI Act Art. 50) ist sichtbar im Frontend
+  umgesetzt: `badge-ai` für KI-Vorschläge und `readonly`-Textareas
+  für Prompt + Begründung.
+- ➖ Kein TypeScript, keine statische Typisierung im Frontend. Für
+  den Scope akzeptabel; Refactoring auf TS bei Bedarf machbar.
+- ➖ Ohne Build kein Bundling/Minification. Traffic-mäßig vernachlässig-
+  bar, im Demo-Setup kein Problem.
 
 ## Alternativen
-- **Pures Vanilla:** State-Sync zwischen Liste, Detail, Historie wird ohne Reactivity-Lib schnell unleserlich.
-- **HTMX + Jinja2:** Erzwingt server-gerenderte HTML-Fragmente, verwischt die dokumentierte FE/BE-Trennung.
-- **Vue/Svelte/React + Vite:** Build-Pipeline, npm-Komplexität und Lernkurve nicht gerechtfertigt für fünf Use Cases.
+
+- **Pure Vanilla JS:** State-Sync zwischen Produktliste, Modals und
+  Simulation wäre ohne Reactivity-Lib schnell unleserlich.
+- **HTMX + Jinja2-Templates:** erzwingt server-gerenderte Fragmente
+  und verwischt die dokumentierte Frontend/Backend-Trennung.
+- **Vue / Svelte / React + Vite:** Build-Pipeline, npm-Komplexität
+  und Lernkurve sind für sechs Use Cases nicht gerechtfertigt.
+- **Laravel mit Blade-Templates:** verworfen mit ADR 0001 (Python-
+  Backend). Zudem kein saubere Client-side-Reactivity.

@@ -1,100 +1,129 @@
-# CLAUDE.md – Projekt-Kontext für KI-Assistenten
+# CLAUDE.md – Projekt-Kontext
 
-Diese Datei ist die zentrale Wahrheit dieses Projekts. Vor jeder Aufgabe lesen, nach jeder Änderung aktualisieren.
+Zentrale Wahrheit für KI-Assistenten und jedes Teammitglied. Vor der
+Arbeit lesen, nach jeder substanziellen Änderung mitziehen.
 
-## 1. Projekt
-- **Name:** KI-gestützte Preisoptimierung im E-Commerce
-- **Modul:** Anwendungsentwicklung
-- **Hochschule:** FOM Hochschule
-- **Team:** 4 Personen (Daniel Brunthaler, Kayathiri Raveendran, Okan Baykal, Sven Schlickewei)
-- **Abschlusspräsentation:** 15./16. Juli 2026
-- **Charakter:** studentischer Semester-Prototyp, kein Produktivsystem.
+## 1. Projektkontext
 
-## 2. Zielbild
-- **In einem Satz:** Web-Tool, in dem Shop-Betreiber Produkte verwalten und pro Produkt eine von vier Preisstrategien (Fixpreis, Formel, Regel, LLM-basiert) wählen, mit Live-Simulation (Uhrzeit, Tag, Lagerbestand, Nachfrage) und vollständiger Preishistorie.
-- **Nicht im Scope:** echte Shop-Anbindung (Shopify/WooCommerce), Multi-Mandanten-Fähigkeit, Echtzeit-Marktdaten-Integration, mobile Apps, produktive Zahlungsabwicklung, personalisiertes Pricing gegenüber Endkunden.
+Web-Tool „KI-gestützte Preisoptimierung im E-Commerce", Studienprojekt
+im Modul *Projekt Anwendungsentwicklung*, FOM Hochschule, Wirtschafts-
+informatik B.Sc., Lehrender **Johannes Kurik**. Team: **Daniel
+Brunthaler** (Projektleitung & Entwicklung), Kayathiri Raveendran, Okan
+Baykal, Sven Schlickewei. Abschlusspräsentation **16.07.2026**. Demo:
+<https://fom.ollornog.de/>. Repo: <https://github.com/Ollornog/AnwendungsentwicklungFOM>.
 
-## 3. Architektur (Kurzfassung)
-- **Frontend** (HTML + Alpine.js + Pico.css + Chart.js, Browser) – nur UI, kommuniziert ausschließlich über REST mit dem Backend. Live-Formel-Evaluator spiegelt die Backend-Whitelist (Variablen + Funktionen).
-- **Backend** (Python + FastAPI) – Geschäftslogik, Preisstrategien, Auth, Rate Limiting, einziger Zugriff auf DB und LLM. AST-basierter Evaluator für Formeln.
-- **Datenbank** (PostgreSQL) – Produkte, Strategien, Preis-Historie, Benutzer, Einstellungen, Tages-API-Zähler.
-- **Externer LLM-Service** (Google Gemini API) – wird ausschließlich vom Backend aufgerufen, mit enger Whitelist.
-- **Reverse-Proxy** (nginx) – Port 80, optional HTTPS per UI-Klick via certbot-nginx; invalidiert bei 5xx-Upstream-Fehlern das Session-Cookie.
-- Details: `docs/architecture.md`.
+Charakter: **Prototyp mit Mock-Daten**, kein Produktivsystem, keine
+Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
 
-## 4. Tech-Stack (aktuell entschieden)
-- Backend: Python 3.11 + FastAPI, SQLAlchemy 2.x, Alembic
-- Datenbank: PostgreSQL (ab 15; Debian-Default)
-- Frontend: HTML5 + Alpine.js 3 + Pico.css 2 + Chart.js 4, via CDN, zero-build (siehe `docs/decisions/0004-frontend-stack.md`)
-- Auslieferung Frontend: FastAPI `StaticFiles` (gleiches Origin wie API)
-- Auth: Starlette-`SessionMiddleware` (signiertes Cookie, HttpOnly, SameSite=Lax), Passwörter mit argon2id (siehe `docs/decisions/0003-auth-session-cookie.md`)
-- LLM-API: Google Gemini (vorläufig für den Prototyp – siehe `docs/decisions/0002-llm-provider.md`)
-- Deployment: Debian 12 + nginx + systemd + sudo, Setup via `install.sh` (siehe `docs/decisions/0005-deployment-debian.md`); HTTPS per UI (Let's Encrypt) nachladbar
-- Begründung & Stand: `docs/decisions/0001-tech-stack.md`, `0002-llm-provider.md`, `0003-auth-session-cookie.md`, `0004-frontend-stack.md`, `0005-deployment-debian.md`
+## 2. Tech-Stack auf einen Blick
 
-## 5. Leitprinzipien (verbindlich)
-1. **Keine personenbezogenen Endkundendaten im Scope.** Verarbeitet werden nur Produktdaten (Name, Kategorie, Einkaufspreis, Wettbewerbspreis, Lagergröße, Verbrauch/Monat, Kontext-Freitext) und minimale Kontodaten für Login (Username, Argon2-Hash, Rolle). Kein personalisiertes Pricing, keine Endkundenprofile. DSGVO-Scope damit minimal.
-2. **Keine echten Daten.** Demo läuft mit Mock-Produkten ("Sneaker", "T-Shirt", …). Das Frontend rendert die Disclaimer sichtbar.
-3. **Human-in-the-Loop.** LLM-Preisvorschläge werden vom Shop-Betreiber bestätigt, nicht automatisch übernommen (Art. 22 DSGVO, AI-Act menschliche Aufsicht).
-4. **KI sichtbar machen.** LLM-Vorschläge werden in UI und Historie als "KI-Vorschlag" markiert (Art. 50 AI Act). Der an die KI geschickte Prompt ist vor dem Klick einsehbar.
-5. **Keine Kundendaten ans LLM.** Der Prompt enthält ausschließlich Produkt-Whitelist-Felder (zentral in `app/strategies/llm.py::_whitelist` und `app/routers/products.py::_strategy_whitelist`).
-6. **Secrets in `.env` bzw. `app_settings`.** API-Keys nie im Code; `.env.example` pflegen; `.gitignore` prüfen. Der Gemini-Key kann zusätzlich per UI in der Tabelle `app_settings` gesetzt werden und überschreibt dann den `.env`-Wert.
-7. **Audit-Trail über Preishistorie.** Jede Berechnung und jeder Strategie-Wechsel erzeugt einen append-only Eintrag mit Zeitstempel, Benutzer, Strategie und Input.
-8. **Admin-only für kritische Bereiche.** HTTPS-Aktivierung, Rate-Limit-Konfiguration und Benutzerverwaltung sind nur für den `admin`-Account erreichbar (Backend: `get_current_admin`, Frontend: `$store.auth.isAdmin()`).
-9. **Rate Limiting.** Jeder authentifizierte API-Aufruf (außer Auth- und Settings-Endpoints) zählt auf ein tageweises Kontingent pro Nutzer (Standard 50, Admin 200; beides einstellbar).
+| Ebene | Technologie | ADR |
+| --- | --- | --- |
+| Sprache Backend | Python 3.11 | [0001](./docs/decisions/0001-tech-stack.md) |
+| Web-Framework | FastAPI + Starlette | [0001](./docs/decisions/0001-tech-stack.md) |
+| ORM / Migrationen | SQLAlchemy 2.x + Alembic | [0001](./docs/decisions/0001-tech-stack.md) |
+| Datenbank | PostgreSQL (≥ 15) | [0001](./docs/decisions/0001-tech-stack.md) |
+| Auth | `SessionMiddleware` + argon2id | [0003](./docs/decisions/0003-auth-session-cookie.md) |
+| LLM | Google Gemini API | [0002](./docs/decisions/0002-llm-provider.md) |
+| Frontend | HTML + Alpine.js + Pico.css + Chart.js, via CDN | [0004](./docs/decisions/0004-frontend-stack.md) |
+| Deployment | Debian 12 + nginx + systemd, `install.sh` | [0005](./docs/decisions/0005-deployment-debian.md) |
 
-## 6. Doku-Map
+## 3. Leitprinzipien
+
+1. **Keine personenbezogenen Endkundendaten** im Scope. Nur Produkt-
+   Stammdaten und minimale Login-Konten.
+2. **Keine echten Daten.** Demo nutzt Mock-Produkte; die UI weist auf
+   den Demo-Charakter hin.
+3. **Human-in-the-Loop:** LLM-Vorschläge werden nie automatisch
+   übernommen, sondern vom Admin bestätigt.
+4. **KI sichtbar markieren** (Art. 50 AI Act): KI-Vorschläge tragen
+   in UI und Historie das Badge „KI-Vorschlag"; der Prompt ist vor
+   dem Klick einsehbar.
+5. **Keine Kundendaten ans LLM.** Prompt enthält ausschließlich die
+   Whitelist-Felder aus `app/strategies/llm.py` bzw.
+   `app/routers/products.py::_strategy_whitelist`.
+6. **Secrets in `.env` oder `app_settings`** – nie im Code, nie im
+   Frontend. Der Gemini-Key kann per UI überschrieben werden und wird
+   in der Tabelle `app_settings` gehalten.
+7. **Audit-Trail in der Preis-Historie** (`price_history`, append-only)
+   für jede bestätigte Berechnung und jeden Strategie-Wechsel.
+8. **Admin-only** für HTTPS-Aktivierung, Rate-Limit-Konfiguration und
+   Benutzerverwaltung – per `get_current_admin` im Backend und
+   `$store.auth.isAdmin()` im Frontend.
+9. **Rate Limiting** pro Benutzer pro Tag (Standard 50, Admin 200,
+   konfigurierbar). Tabelle `api_rate_usage`.
+10. **Frontend/Backend-Trennung niemals aufweichen.** Frontend hat
+    keinen DB-Zugriff, keine Geschäftslogik; Kommunikation nur über
+    die REST-API.
+11. **Doku mitziehen.** Jede Änderung, die Scope, API, Datenmodell oder
+    Security berührt, aktualisiert auch die zugehörige Doku im gleichen
+    PR.
+
+## 4. Doku-Map
+
 | Datei | Inhalt |
 | --- | --- |
-| `CLAUDE.md` | Diese Datei: zentrale Projekt-Wahrheit |
-| `README.md` | Projektname, Kurzbeschreibung, Quick-Start, Installation, Disclaimer |
-| `docs/architecture.md` | Systemarchitektur, Komponenten, Schnittstellen |
-| `docs/data-model.md` | DB-Schema, Entitäten, Beziehungen, Migrationen |
-| `docs/api-contract.md` | REST-Endpoints, Admin-/Rate-Limit-Regeln |
-| `docs/pricing-strategies.md` | Die vier Strategien + Variablen + Funktionen |
-| `docs/use-cases.md` | Use Cases im Kurzformat (UC-01 … UC-10) |
-| `docs/compliance.md` | DSGVO, EU AI Act, NIS-2-Check, Datenschutzhinweis |
-| `docs/security.md` | Informationssicherheit: Prototyp vs. Produktiv |
-| `docs/contributions.md` | Wer hat was beigetragen (am Projektende) – **noch zu befüllen** |
-| `docs/demo-script.md` | Ablauf der Abschluss-Demo (am Projektende) – **noch zu befüllen** |
-| `docs/decisions/` | ADRs, ein File pro Entscheidung |
+| [`README.md`](./README.md) | Projektkurzbeschreibung, Quick-Start, Demo-Zugang |
+| [`docs/architecture.md`](./docs/architecture.md) | Komponentendiagramm, Datenfluss, Deployment |
+| [`docs/data-model.md`](./docs/data-model.md) | ERD, Tabellen, Migrationen |
+| [`docs/api-contract.md`](./docs/api-contract.md) | Endpoint-Übersicht, Kern-Beispiele |
+| [`docs/pricing-strategies.md`](./docs/pricing-strategies.md) | Fixpreis + Formel im Detail |
+| [`docs/use-cases.md`](./docs/use-cases.md) | Sechs Use Cases |
+| [`docs/compliance.md`](./docs/compliance.md) | DSGVO, AI Act, UWG/PAngV – knapp |
+| [`docs/security.md`](./docs/security.md) | TOMs-Tabelle Prototyp vs. Produktiv |
+| [`docs/requirements.md`](./docs/requirements.md) | Anforderungs-Dokument |
+| `docs/decisions/` | ADRs 0001–0005 |
 
-## 7. Abdeckung Modulanforderungen
-| Anforderung | Abgedeckt durch |
+## 5. Abdeckung Modulanforderungen
+
+| Modul-Skript (Kurik) | Artefakt |
 | --- | --- |
-| IT-Architektur | `docs/architecture.md` |
-| Software-Modellierung | `docs/data-model.md`, `docs/api-contract.md`, `docs/use-cases.md` |
-| Datenschutz | `docs/compliance.md`, öffentliche Seite `/pages/legal.html` |
-| Informationssicherheit | `docs/security.md`, interne Seite `/pages/compliance.html` |
-| Datenbankgestützte Anwendung | Datenmodell + Implementierung (PostgreSQL, Alembic-Migrationen 0001–0006) |
+| IT-Architektur | [`docs/architecture.md`](./docs/architecture.md) |
+| Software-Modellierung (ERM + UC) | [`docs/data-model.md`](./docs/data-model.md), [`docs/use-cases.md`](./docs/use-cases.md) |
+| REST-API-Design | [`docs/api-contract.md`](./docs/api-contract.md) |
+| Datenschutz & Rechtliches | [`docs/compliance.md`](./docs/compliance.md), öffentliche Seite `/pages/legal.html` |
+| Informationssicherheit | [`docs/security.md`](./docs/security.md), interne Seite `/pages/compliance.html` |
+| Datenbankgestützte Anwendung | PostgreSQL + Alembic-Migrationen `0001–0006` |
+| KI-Integration | Gemini-Client in `app/llm.py`, Strategien in `app/strategies/`, ADR [0002](./docs/decisions/0002-llm-provider.md) |
 
-## 8. Arbeitsregeln
-- **Coding-Conventions:** Backend nach PEP 8 + Type Hints (kein `from __future__ import annotations` – hatte einen FastAPI-204-Fehler ausgelöst); Frontend mit konsistenter Formatierung.
-- **Commit-Format:** Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`).
-- **Branch-Strategie:** `main` ist immer lauffähig; Feature-Branches `feature/<kurzname>`, Fixes `fix/<kurzname>`.
-- **PR-Regeln:** Mindestens ein Review aus dem Team, CI grün, betroffene Doku aktualisiert.
-- **Trennung:** Frontend hat keinen DB-Zugriff und keine Geschäftslogik. Alles über die REST-API.
-- **Secrets:** ausschließlich in `.env` oder `app_settings`; nie im Code; `.env.example` als Vorlage pflegen.
-- **LLM:** keine Kundendaten an externe LLMs, nur Produkt-Whitelist-Felder. Begründung in `docs/compliance.md`.
-- **Privilegierte Operationen:** Backend-Service-User `preisopt` hat **genau einen** sudoers-Eintrag (HTTPS-Helper, fester Pfad).
+## 6. Änderungshistorie
 
-## 9. Offene Punkte & nächste Schritte
-- [ ] Kostenrahmen Gemini (freier Tier vs. bezahlter Tarif) klären – ADR 0002 ergänzen.
-- [ ] `docs/contributions.md` und `docs/demo-script.md` vor der Abschlusspräsentation befüllen.
-- [ ] Für Produktiv-Ausblick: DSFA-Langfassung, AVV-Unterschrift mit Google Cloud, Backup-/Restore-Drill dokumentieren.
-- [ ] HSTS aktivieren sobald HTTPS dauerhaft läuft (aktuell bewusst aus, siehe `docs/security.md`).
+- 2026-04-19 – Initiale Doku-Struktur und ADR 0001 (Tech-Stack).
+- 2026-04-19 – LLM-Provider festgelegt (ADR 0002), Frontend-Stack
+  (ADR 0004) und Auth (ADR 0003).
+- 2026-04-19 – Backend-Scaffold (FastAPI + SQLAlchemy + Alembic),
+  Preisstrategien und Debian-Deployment (ADR 0005, Migration 0001).
+- 2026-04-19 – Simulations-UI: globale Slider, live berechneter
+  Verkaufspreis; Produkt-Felder `context`, `monthly_demand`;
+  Runtime-Variablen `hour`/`day`/`stock`; Endpoint `/strategy/suggest`
+  (Migration 0002).
+- 2026-04-20 – Glatte periodische Formeln (`sin`/`cos`/`mod`, `pi`,
+  `weekday`); Token-Gruppen im Formel-Modal; Graph-Modal (Chart.js).
+- 2026-04-20 – Nachfrage-Faktor `demand` als Slider 0–2 (Default 1)
+  statt früherem Verbrauch/Tick; Migration 0005 entfernt
+  `daily_usage`.
+- 2026-04-20 – Einstellungsseite: Gemini-Key-Override (Migration
+  0003), Passwort ändern, DB-Reset auf Seed-Stand.
+- 2026-04-20 – HTTPS per Klick via `certbot --nginx`, sudoers-Regel
+  für genau ein Helper-Skript.
+- 2026-04-20 – Rate Limiting pro Tag (Migration 0006); Admin-only-
+  Guards für `/users`, `/settings/https*`, `/settings/rate-limit*`.
+- 2026-04-20 – Benutzerverwaltung (`/users`-CRUD) mit Schutz des
+  Bootstrap-Admins; vier Team-Accounts im Seed.
+- 2026-04-20 – `price_history.user_id` (Migration 0004), automatischer
+  Snapshot bei Strategie-Wechsel, Wettbewerbs-KI-Batch-Endpoint,
+  nginx invalidiert Cookie bei 5xx.
+- 2026-04-20 – Öffentliche Seite `/pages/legal.html` (Impressum,
+  Datenschutz, Betroffenenrechte, KI-Einstufung), interne Seite
+  `/pages/compliance.html` (VVT, DPIA, TOMs, NIS-2, KI-Kompetenz).
 
-## 10. Änderungshistorie (nur relevante Entscheidungen)
-- 2026-04-19 – Initiale Doku-Struktur und ADR 0001 (Tech-Stack) angelegt.
-- 2026-04-19 – LLM-Provider festgelegt (Google Gemini, vorläufig), Leitprinzipien, Compliance- und Security-Doku ergänzt.
-- 2026-04-19 – Frontend-Stack (Alpine.js + Pico.css, ADR 0004) und Auth (Session-Cookie, ADR 0003) festgelegt, Frontend-Scaffold angelegt.
-- 2026-04-19 – Backend (FastAPI + SQLAlchemy + Alembic), Preisstrategien, Gemini-Client und Debian-12-Deployment (ADR 0005) implementiert.
-- 2026-04-19 – Simulations-UI für Demo: globale Slider (Uhrzeit/Tag), pro Produkt Lager-/Verbrauchs-Slider mit Live-Preisberechnung. Product-Felder `context`, `monthly_demand`; Formel-Evaluator akzeptiert Runtime-Variablen `hour`, `day`, `stock`; Endpoint `POST /products/{id}/strategy/suggest` (KI-Vorschlag mit optionaler Online-Recherche). Migration 0002.
-- 2026-04-20 – `weekday`, sanfte Kurven via `sin`/`cos`/`mod` + Konstante `pi`; Token-Gruppen im Formel-Modal; Graph-Modal pro Produkt mit Chart.js.
-- 2026-04-20 – Nachfrage-Faktor `demand` als Live-Slider 0–2 (Default 1, ersetzt den früheren Verbrauch/Tick); Migration 0005 entfernt `daily_usage`.
-- 2026-04-20 – Einstellungsseite: Gemini-API-Key per UI (Tabelle `app_settings`, Migration 0003), Passwort ändern, Datenbank-Reset auf Seed-Stand.
-- 2026-04-20 – HTTPS per Klick: `POST /api/v1/settings/https/enable` ruft via sudo das Helper-Skript `/usr/local/bin/preisopt-https-enable` auf, das `certbot --nginx` startet. sudoers-Regel `deploy/sudoers.d-preisopt`.
-- 2026-04-20 – Rate Limiting pro Benutzer pro Tag (Tabelle `api_rate_usage`, Migration 0006); admin-only-Guards für `/users`, `/settings/https*`, `/settings/rate-limit*`.
-- 2026-04-20 – Benutzerverwaltung: `POST/PUT/DELETE /api/v1/users` mit Schutz des bootstrap-Admins; vier Team-Accounts im Seed; Passwort-Änderung per UI.
-- 2026-04-20 – `price_history.user_id` (Migration 0004), automatischer Snapshot bei Strategie-Wechsel, Wettbewerbs-KI-Button (Batch-Endpoint), nginx invalidiert Cookie bei 5xx.
-- 2026-04-20 – Öffentliche Seite `/pages/legal.html` (Impressum, Datenschutz, Betroffenenrechte, KI-Einstufung), interne Seite `/pages/compliance.html` (VVT, DPIA, TOMs, NIS-2, KI-Kompetenz), Footer mit Legal-Links.
+## 7. Offene Punkte
+
+- [ ] Kostenrahmen Gemini (Free-Tier-Grenzen) beobachten, ADR 0002
+      ggf. nachziehen.
+- [ ] `docs/contributions.md` und `docs/demo-script.md` vor der
+      Präsentation befüllen.
+- [ ] HSTS aktivieren, sobald HTTPS dauerhaft läuft (siehe
+      `docs/security.md`).
+- [ ] Produktiv-Ausblick dokumentieren: DSFA-Langfassung, AVV mit
+      Google Cloud, automatisiertes Backup- und Restore-Drill.

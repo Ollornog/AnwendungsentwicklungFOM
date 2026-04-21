@@ -1,139 +1,134 @@
 # Datenmodell
 
-Persistiert in PostgreSQL. Migrationen via Alembic (`backend/alembic/versions/`).
-Geldbeträge als `numeric(12,2)`, Zeitstempel als `timestamptz` in UTC.
-Primärschlüssel sind UUIDs (`gen_random_uuid()`), außer bei Tabellen, bei denen
-ein fachlicher Schlüssel natürlicher ist (`app_settings`, `api_rate_usage`,
-`price_suggestions`).
+Persistiert in PostgreSQL. Migrationen via Alembic. Geldbeträge als
+`numeric(12,2)`, Zeitstempel als `timestamptz` in UTC. UUIDs per
+`gen_random_uuid()`. Detail-Schema siehe SQLAlchemy-Models unter
+[`backend/app/models.py`](../backend/app/models.py).
 
 ## Entitäten
 
-### `users`
-Login-Konten. Der bootstrap-Account heißt `admin` und ist in der UI gegen
-Passwort-/Rollen-Änderungen und Löschen geschützt.
-
-| Spalte | Typ | Constraints |
+| Tabelle | Zweck | Besonderheit |
 | --- | --- | --- |
-| `id` | `uuid` | PK |
-| `username` | `varchar(64)` | UNIQUE, NOT NULL |
-| `password_hash` | `text` | NOT NULL (Argon2id) |
-| `role` | `varchar(16)` | NOT NULL, CHECK in (`admin`, `viewer`), Default `admin` |
-| `created_at` | `timestamptz` | NOT NULL, Default `now()` |
+| `users` | Login-Konten (Admin + Team-Accounts) | bootstrap-Admin `admin` ist gegen PUT/DELETE geschützt |
+| `products` | Produkt-Stammdaten des Shop-Betreibers | `stock` = Lagergröße (Obergrenze); aktueller Bestand lebt im Frontend |
+| `pricing_strategies` | Genau eine aktive Strategie pro Produkt (1:1) | Config als JSONB, strategie-spezifisch validiert |
+| `price_history` | Append-only Audit-Trail jeder bestätigten Berechnung | `is_llm_suggestion`-Flag markiert KI-Ursprung |
+| `price_suggestions` | Ephemere Vorschläge im Zwei-Schritt-Flow (Price → Confirm) | TTL via `SUGGESTION_TTL_MINUTES` |
+| `app_settings` | Key/Value-Store für Laufzeit-Konfiguration | Gemini-Key, HTTPS-Domain, Rate-Limits |
+| `api_rate_usage` | Tägliche API-Nutzungszähler pro Benutzer | (user_id, day) als zusammengesetzter PK |
+
+## ERD
+
+```mermaid
+erDiagram
+    users ||--o{ products           : "besitzt"
+    users ||--o{ price_history      : "bestaetigt"
+    users ||--o{ api_rate_usage     : "zaehlt"
+    products ||--|| pricing_strategies : "hat aktive"
+    products ||--o{ price_history      : "erzeugt"
+    products ||--o{ price_suggestions  : "erzeugt"
+
+    users {
+        uuid id PK
+        varchar username UK
+        text password_hash
+        varchar role
+        timestamptz created_at
+    }
+    products {
+        uuid id PK
+        uuid owner_id FK
+        varchar name
+        varchar category
+        numeric cost_price
+        int stock
+        numeric competitor_price
+        text context
+        int monthly_demand
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    pricing_strategies {
+        uuid id PK
+        uuid product_id FK
+        varchar kind
+        jsonb config
+        timestamptz updated_at
+    }
+    price_history {
+        uuid id PK
+        uuid product_id FK
+        uuid user_id FK
+        varchar strategy_kind
+        numeric price
+        varchar currency
+        bool is_llm_suggestion
+        jsonb inputs
+        text reasoning
+        timestamptz created_at
+    }
+    price_suggestions {
+        varchar token PK
+        uuid product_id FK
+        varchar strategy_kind
+        numeric price
+        varchar currency
+        bool is_llm_suggestion
+        jsonb inputs
+        text reasoning
+        timestamptz created_at
+        timestamptz expires_at
+    }
+    app_settings {
+        varchar key PK
+        text value
+        timestamptz updated_at
+    }
+    api_rate_usage {
+        uuid user_id PK
+        date day PK
+        int count
+    }
+```
+
+## Felddetails (Auszug)
 
 ### `products`
-Produkt-Stammdaten des Shop-Betreibers. `stock` ist die Lager-Obergrenze, der
-aktuelle Lagerbestand in der Simulation lebt rein im Frontend-Zustand.
 
-| Spalte | Typ | Constraints |
+| Spalte | Typ | Constraint |
 | --- | --- | --- |
-| `id` | `uuid` | PK |
-| `owner_id` | `uuid` | NOT NULL, FK → `users.id` ON DELETE CASCADE |
 | `name` | `varchar(128)` | NOT NULL |
 | `category` | `varchar(64)` | NOT NULL |
-| `cost_price` | `numeric(12,2)` | NOT NULL, CHECK ≥ 0 |
-| `stock` | `integer` | NOT NULL, CHECK ≥ 0 |
-| `competitor_price` | `numeric(12,2)` | NULLABLE, CHECK NULL OR ≥ 0 |
-| `context` | `text` | NOT NULL, Default `''` (Freitext für KI-Prompt) |
-| `monthly_demand` | `integer` | NOT NULL, Default `0`, CHECK ≥ 0 |
-| `created_at` | `timestamptz` | NOT NULL, Default `now()` |
-| `updated_at` | `timestamptz` | NOT NULL, Default `now()`, on update `now()` |
+| `cost_price` | `numeric(12,2)` | NOT NULL, ≥ 0 |
+| `stock` | `integer` | NOT NULL, ≥ 0 |
+| `competitor_price` | `numeric(12,2)` | NULL erlaubt, sonst ≥ 0 |
+| `context` | `text` | Freitext für LLM-Prompt |
+| `monthly_demand` | `integer` | NOT NULL, ≥ 0 |
 
-### `pricing_strategies`
-Eine aktive Strategie pro Produkt (1:1). Konfiguration als JSONB, strategie-
-spezifisch im Backend validiert.
+### `pricing_strategies.kind`
 
-| Spalte | Typ | Constraints |
-| --- | --- | --- |
-| `id` | `uuid` | PK |
-| `product_id` | `uuid` | UNIQUE, NOT NULL, FK → `products.id` ON DELETE CASCADE |
-| `kind` | `varchar(16)` | NOT NULL, CHECK in (`fix`, `formula`, `rule`, `llm`) |
-| `config` | `jsonb` | NOT NULL |
-| `updated_at` | `timestamptz` | NOT NULL |
+`CHECK IN ('fix','formula','rule','llm')` – im Code implementiert,
+im UI-Scope aktuell nur `fix` und `formula` editierbar
+(siehe [`pricing-strategies.md`](./pricing-strategies.md)).
 
 ### `price_history`
-Append-only. Kein `UPDATE`/`DELETE` im normalen Flow (Audit-Trail).
 
-| Spalte | Typ | Constraints |
-| --- | --- | --- |
-| `id` | `uuid` | PK |
-| `product_id` | `uuid` | NOT NULL, FK → `products.id` ON DELETE CASCADE, INDEX |
-| `user_id` | `uuid` | NULLABLE, FK → `users.id` ON DELETE SET NULL, INDEX |
-| `strategy_kind` | `varchar(16)` | NOT NULL |
-| `price` | `numeric(12,2)` | NOT NULL |
-| `currency` | `varchar(3)` | NOT NULL, Default `EUR` |
-| `is_llm_suggestion` | `boolean` | NOT NULL, Default `false` |
-| `inputs` | `jsonb` | NOT NULL (Variablen-Snapshot zum Zeitpunkt der Berechnung) |
-| `reasoning` | `text` | NULLABLE |
-| `created_at` | `timestamptz` | NOT NULL, Default `now()`, INDEX |
+Append-only. Kein `UPDATE`/`DELETE` im normalen Flow. `user_id` ist
+`ON DELETE SET NULL` – gelöschte Benutzer bleiben im Audit-Trail
+anonymisiert sichtbar.
 
-### `price_suggestions`
-Ephemere Vorschläge aus dem Zwei-Schritt-Flow (`/price` → `/price/confirm`).
-Beim Confirm wird der Eintrag gelesen, in `price_history` überführt und
-gelöscht. Abgelaufene Vorschläge liefern `410 Gone`.
+### `app_settings`-Keys
 
-| Spalte | Typ | Constraints |
-| --- | --- | --- |
-| `token` | `varchar(64)` | PK |
-| `product_id` | `uuid` | NOT NULL, FK → `products.id` ON DELETE CASCADE |
-| `strategy_kind` | `varchar(16)` | NOT NULL |
-| `price` | `numeric(12,2)` | NOT NULL |
-| `currency` | `varchar(3)` | NOT NULL, Default `EUR` |
-| `is_llm_suggestion` | `boolean` | NOT NULL |
-| `inputs` | `jsonb` | NOT NULL |
-| `reasoning` | `text` | NULLABLE |
-| `created_at` | `timestamptz` | NOT NULL, Default `now()` |
-| `expires_at` | `timestamptz` | NOT NULL (TTL aus `SUGGESTION_TTL_MINUTES`) |
+`gemini_api_key`, `https_enabled`, `https_domain`, `rate_limit_default`,
+`rate_limit_admin`.
 
-### `app_settings`
-Globale Laufzeit-Konfiguration, per Einstellungs-UI änderbar. Eigenständige
-Key/Value-Tabelle, damit kein Service-Restart nötig wird.
-
-| Spalte | Typ | Constraints |
-| --- | --- | --- |
-| `key` | `varchar(64)` | PK |
-| `value` | `text` | NOT NULL |
-| `updated_at` | `timestamptz` | NOT NULL |
-
-Aktuell verwendete Keys: `gemini_api_key`, `https_enabled`, `https_domain`,
-`rate_limit_default`, `rate_limit_admin`.
-
-### `api_rate_usage`
-Tagesbasiertes Zählwerk für das Rate-Limit pro User. Pro Tag genau eine Zeile
-pro Benutzer; ein neuer Tag bedeutet implizit `count = 0`.
-
-| Spalte | Typ | Constraints |
-| --- | --- | --- |
-| `user_id` | `uuid` | PK, FK → `users.id` ON DELETE CASCADE |
-| `day` | `date` | PK |
-| `count` | `integer` | NOT NULL, Default `0`, CHECK ≥ 0 |
-
-## Beziehungen
-
-```
-users 1 ── n products 1 ── 1 pricing_strategies
-              └── n price_history  (FK user_id optional)
-              └── n price_suggestions
-users 1 ── n price_history
-users 1 ── n api_rate_usage
-
-app_settings   — global, keine Fremdschlüssel
-```
-
-## Invarianten
-- `pricing_strategies.config` passt zum Schema der jeweiligen `kind`-Variante.
-  Validierung durch die Strategy-Evaluator-Module im Backend.
-- `price_history` wird ausschließlich über den Confirm-Flow oder als
-  Snapshot beim Strategie-Upsert erzeugt.
-- `price_history.is_llm_suggestion = true` genau dann, wenn die Strategie
-  `llm` war oder die KI-Suggest-Route den Preis geliefert hat.
-
-## Migrationen (Stand)
+## Migrations-Status
 
 | Revision | Inhalt |
 | --- | --- |
-| `0001_initial` | Tabellen `users`, `products`, `pricing_strategies`, `price_history`, `price_suggestions` |
-| `0002_product_context_demand` | `products.context`, `products.monthly_demand`, `products.daily_usage` (letzteres später wieder entfernt) |
+| `0001_initial` | Grundtabellen users/products/pricing_strategies/price_history/price_suggestions |
+| `0002_product_context_demand` | Produkt-Felder `context`, `monthly_demand`, `daily_usage` |
 | `0003_app_settings` | Tabelle `app_settings` |
 | `0004_price_history_user` | `price_history.user_id` (nullable FK) |
-| `0005_drop_daily_usage` | `products.daily_usage` entfernt – Nachfrage treibt Lager-Sim über `monthly_demand` × Live-Faktor `demand` |
+| `0005_drop_daily_usage` | `daily_usage` entfernt – ersetzt durch Live-Slider `demand` |
 | `0006_api_rate_usage` | Tabelle `api_rate_usage` |
