@@ -105,6 +105,11 @@ document.addEventListener('alpine:init', () => {
     aiLoading: false,
     aiPrompt: '',
     aiReasoning: '',
+    // True, solange die Werte in amount/expression unveraendert aus der
+    // letzten KI-Antwort kommen. Jeder manuelle Edit (Input, Token-Klick,
+    // Modal-Reset) setzt das Flag zurueck, damit nur "echte" KI-Uebernahmen
+    // den Historien-Snapshot als KI-Vorschlag markieren.
+    aiUsed: false,
     saving: false,
     error: '',
     tokenGroups: TOKEN_GROUPS,
@@ -114,6 +119,7 @@ document.addEventListener('alpine:init', () => {
       this.error = '';
       this.aiPrompt = '';
       this.aiReasoning = '';
+      this.aiUsed = false;
       this.useAi = false;
       this.online = false;
       this.fancy = false;
@@ -149,6 +155,8 @@ document.addEventListener('alpine:init', () => {
       const before = this.expression.slice(0, start);
       const after = this.expression.slice(end);
       this.expression = before + text + after;
+      // Token eingefuegt = manueller Edit, Wert ist nicht mehr pur KI.
+      this.aiUsed = false;
       // naechster Tick, damit Alpine das Input-Update uebernommen hat.
       this.$nextTick(() => {
         el.focus();
@@ -188,15 +196,21 @@ document.addEventListener('alpine:init', () => {
           `/products/${this.product.id}/strategy/suggest`,
           body,
         );
+        let accepted = false;
         if (res.target === 'fix' && res.amount != null) {
           this.amount = res.amount;
+          accepted = true;
         } else if (res.target === 'formula' && res.expression) {
           this.expression = res.expression;
+          accepted = true;
         }
         this.aiReasoning = res.reasoning || '';
         // Der Prompt aus der Suggest-Response ist autoritativ (falls der
         // Server den Prompt in der Zwischenzeit leicht angepasst hat).
         if (res.prompt) this.aiPrompt = res.prompt;
+        // KI-Wert wurde ins Feld uebernommen – bis zum naechsten manuellen
+        // Edit gilt der Wert als KI-Vorschlag.
+        this.aiUsed = accepted;
       } catch (e) {
         this.error = e.message;
       } finally {
@@ -213,14 +227,14 @@ document.addEventListener('alpine:init', () => {
           this.error = 'Fixpreis muss eine Zahl >= 0 sein.';
           return;
         }
-        payload = { kind: 'fix', config: { amount: amt } };
+        payload = { kind: 'fix', config: { amount: amt }, from_llm: this.aiUsed };
       } else {
         const expr = (this.expression || '').trim();
         if (!expr) {
           this.error = 'Formel darf nicht leer sein.';
           return;
         }
-        payload = { kind: 'formula', config: { expression: expr } };
+        payload = { kind: 'formula', config: { expression: expr }, from_llm: this.aiUsed };
       }
       this.saving = true;
       this.error = '';

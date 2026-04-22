@@ -99,7 +99,7 @@ Die Ownership-Logik ist pro Produkt: jeder Nutzer sieht nur seine eigenen Produk
 3. Nutzer prüft Prompt, Vorschlag und Begründung. Er kann den Vorschlag übernehmen, anpassen oder verwerfen.
 4. *Speichern* persistiert die Strategie wie in UC-4 – als `fix` oder `formula`.
 
-**Nachbedingung:** Strategie aktiv (Typ `fix` oder `formula`); Snapshot in History wie in UC-4. Der KI-Ursprung ist aus dem in der UI sichtbaren Prompt und der Begründung nachvollziehbar; die gespeicherte Strategie selbst trägt aber die reguläre Kennung `fix` bzw. `formula`.
+**Nachbedingung:** Strategie aktiv (Typ `fix` oder `formula`); Snapshot in History wie in UC-4. Wird der KI-Vorschlag unverändert gespeichert, trägt der Snapshot zusätzlich `is_llm_suggestion = true` und das KI-Badge in der Historie (Art. 50 AI Act). Manuelle Edits am Vorschlag setzen das Flag zurück – es ist dann ein regulärer Fixpreis- oder Formel-Eintrag.
 **Ausnahmen:** Kein API-Key → 503; ungültige LLM-Antwort → 422; Rate-Limit überschritten → 429; Klick ohne *Speichern* übernimmt nichts (Human-in-the-Loop).
 
 ---

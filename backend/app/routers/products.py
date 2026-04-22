@@ -215,7 +215,7 @@ def upsert_strategy(
                 strategy=payload.kind,
                 price=result.price,
                 currency=result.currency,
-                is_llm_suggestion=False,
+                is_llm_suggestion=payload.from_llm,
                 inputs=result.inputs,
                 reasoning=(result.reasoning or "") + " · Snapshot bei Strategie-Aenderung",
             )

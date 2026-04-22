@@ -88,6 +88,10 @@ class StrategyOut(BaseModel):
 class StrategyUpsert(BaseModel):
     kind: StrategyKind
     config: dict[str, Any]
+    # True, wenn der gespeicherte Wert unveraendert aus einem KI-Vorschlag
+    # stammt – markiert den Snapshot in der Preis-Historie als KI-Eintrag
+    # (Art. 50 AI Act: KI-Output kennzeichnen).
+    from_llm: bool = False
 
 
 class ProductOut(ProductBase):

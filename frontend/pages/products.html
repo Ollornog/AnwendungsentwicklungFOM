@@ -179,13 +179,15 @@
 
         <div x-show="target === 'fix'">
           <label>Betrag (EUR)
-            <input type="number" step="0.01" min="0" x-model="amount">
+            <input type="number" step="0.01" min="0" x-model="amount"
+                   @input="aiUsed = false">
           </label>
         </div>
 
         <div x-show="target === 'formula'">
           <label>Formel
             <input type="text" x-model="expression" x-ref="expressionInput"
+                   @input="aiUsed = false"
                    placeholder="z. B. cost_price * 1.8 + (hour >= 18) * 2">
           </label>
           <template x-for="g in tokenGroups" :key="g.label">
