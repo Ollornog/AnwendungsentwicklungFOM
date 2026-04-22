@@ -1,3 +1,4 @@
+```mermaid
 ---
 config:
   layout: elk
@@ -52,3 +53,5 @@ flowchart LR
     classDef usecase fill:#fff7ed,stroke:#fb923c,stroke-width:1px,color:#1e1b4b
     classDef external fill:#f5f3ff,stroke:#a78bfa,stroke-width:2px,stroke-dasharray:5,5,color:#1e1b4b
     classDef subgraphStyle color:#1e1b4b
+
+```
