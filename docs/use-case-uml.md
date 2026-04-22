@@ -1,65 +1,54 @@
-```mermaid
+---
+config:
+  layout: elk
+---
 flowchart LR
-  %% Akteure
-  User(("👤<br/>Shop-Betreiber:in"))
-  Admin(("👤<br/>Admin"))
-  LLM(("🤖<br/>Gemini API"))
-
-  %% Systemgrenze
-  subgraph System["Preisoptimierungs-Tool"]
-    direction TB
-
-    subgraph Auth["Zugang"]
-      UC0([UC-0<br/>Einloggen])
-    end
-
-    subgraph Kern["Produkt- und Preisverwaltung"]
-      UC1([UC-1<br/>Produkt anlegen])
-      UC2([UC-2<br/>Strategie zuweisen])
-      UC3([UC-3<br/>Preis berechnen])
-      UC4([UC-4<br/>KI-Vorschlag für Strategie einholen])
-      UC5([UC-5<br/>Wettbewerbspreise recherchieren])
-      UC6([UC-6<br/>Simulator nutzen])
-      UC7([UC-7<br/>Preisgraph öffnen])
-      UC8([UC-8<br/>Historie einsehen])
-    end
-
-    subgraph AdminArea["Admin-Bereich"]
-      UC9([UC-9<br/>Team-Accounts verwalten])
-      UC10([UC-10<br/>System konfigurieren])
-    end
+ subgraph Auth["Zugang"]
+        UC0(["UC-0<br>Einloggen"])
   end
+ subgraph Kern["Produkt- und Preisverwaltung"]
+        UC1(["UC-1<br>Produkt anlegen"])
+        UC2(["UC-2<br>Strategie zuweisen"])
+        UC3(["UC-3<br>Preis berechnen"])
+        UC4(["UC-4<br>KI-Vorschlag für<br>Strategie einholen"])
+        UC5(["UC-5<br>Wettbewerbspreise<br>recherchieren"])
+        UC6(["UC-6<br>Simulator nutzen"])
+        UC7(["UC-7<br>Preisgraph öffnen"])
+        UC8(["UC-8<br>Historie einsehen"])
+  end
+ subgraph AdminArea["Admin-Bereich"]
+        UC9(["UC-9<br>Team-Accounts<br>verwalten"])
+        UC10(["UC-10<br>System<br>konfigurieren"])
+  end
+ subgraph System["Preisoptimierungs-Tool"]
+    direction TB
+        Auth
+        Kern
+        AdminArea
+  end
+    User(("👤<br>Shop-Betreiber:in")) --> UC0 & UC1 & UC2 & UC5 & UC6 & UC7 & UC8
+    Admin(("👤<br>Admin")) -. erbt von .-> User
+    Admin --> UC9 & UC10
+    UC2 -. «include» .-> UC3
+    UC4 -. «extend» .-> UC2
+    UC4 -- fragt --> LLM(("🤖<br>Gemini API"))
+    UC5 -- fragt --> LLM
 
-  %% Shop-Betreiber:in
-  User --> UC0
-  User --> UC1
-  User --> UC2
-  User --> UC5
-  User --> UC6
-  User --> UC7
-  User --> UC8
-
-  %% Admin erbt alle User-Rechte und erhält Admin-Flows
-  Admin -.->|erbt von| User
-  Admin --> UC9
-  Admin --> UC10
-
-  %% include: Strategie-Zuweisung schreibt immer einen Preis
-  UC2 -.->|«include»| UC3
-
-  %% extend: KI-Vorschlag ist optionale Erweiterung der Strategie-Zuweisung
-  UC4 -.->|«extend»| UC2
-
-  %% externe Abhängigkeit
-  UC4 -->|fragt| LLM
-  UC5 -->|fragt| LLM
-
-  %% Styling
-  classDef actor fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-  classDef usecase fill:#fff4e6,stroke:#e65100,stroke-width:1px
-  classDef external fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,stroke-dasharray: 5 5
-
-  class User,Admin actor
-  class LLM external
-  class UC0,UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10 usecase
-```
+     UC0:::usecase
+     UC1:::usecase
+     UC2:::usecase
+     UC3:::usecase
+     UC4:::usecase
+     UC5:::usecase
+     UC6:::usecase
+     UC7:::usecase
+     UC8:::usecase
+     UC9:::usecase
+     UC10:::usecase
+     User:::actor
+     Admin:::actor
+     LLM:::external
+    classDef actor fill:#eef2ff,stroke:#818cf8,stroke-width:2px,color:#1e1b4b
+    classDef usecase fill:#fff7ed,stroke:#fb923c,stroke-width:1px,color:#1e1b4b
+    classDef external fill:#f5f3ff,stroke:#a78bfa,stroke-width:2px,stroke-dasharray:5,5,color:#1e1b4b
+    classDef subgraphStyle color:#1e1b4b
