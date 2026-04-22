@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.deps import get_current_user_rate_limited as get_current_user
 from app.llm import (
+    LLMRateLimitError,
     LLMResponseError,
     LLMUnavailableError,
     preview_strategy_prompt,
@@ -115,6 +116,13 @@ def suggest_competitor_prices_endpoint(
     api_key = app_settings_svc.gemini_api_key(db)
     try:
         llm_items = suggest_competitor_prices(payload, api_key=api_key)
+    except LLMRateLimitError as exc:
+        headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers=headers,
+        ) from exc
     except LLMUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMResponseError as exc:
@@ -270,6 +278,13 @@ def suggest_strategy_endpoint(
             api_key=api_key,
             fancy=payload.fancy,
         )
+    except LLMRateLimitError as exc:
+        headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(exc),
+            headers=headers,
+        ) from exc
     except LLMUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMResponseError as exc:

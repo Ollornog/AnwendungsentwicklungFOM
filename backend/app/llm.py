@@ -17,6 +17,18 @@ class LLMUnavailableError(RuntimeError):
     pass
 
 
+class LLMRateLimitError(LLMUnavailableError):
+    """Provider-Rate-Limit erreicht (z. B. Gemini Free-Tier RPM).
+
+    `retry_after` ist die vom Provider gemeldete Wartezeit in Sekunden,
+    None wenn nicht extrahierbar.
+    """
+
+    def __init__(self, message: str, retry_after: int | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 class LLMResponseError(RuntimeError):
     pass
 
@@ -62,6 +74,25 @@ def _load_genai():
     return genai
 
 
+def _extract_retry_after(exc: Exception) -> int | None:
+    """Liest die Retry-Dauer aus einer Gemini-Quota-Exception.
+
+    Die SDK serialisiert den RetryInfo-Block als Text in die Nachricht
+    (`retry_delay { seconds: 41 }`); fuer eine UI-Anzeige reicht das,
+    ohne den zusaetzlichen google.rpc-Import.
+    """
+    import re
+
+    text = str(exc)
+    match = re.search(r"retry_delay\s*\{[^}]*seconds:\s*(\d+)", text)
+    if match:
+        return int(match.group(1))
+    match = re.search(r"retry in\s+([\d.]+)s", text, re.IGNORECASE)
+    if match:
+        return int(float(match.group(1))) + 1
+    return None
+
+
 def _generate(
     prompt: str,
     *,
@@ -85,17 +116,34 @@ def _generate(
         model_kwargs["tools"] = [{"google_search_retrieval": {}}]
 
     try:
+        from google.api_core.exceptions import ResourceExhausted
+    except ImportError:  # pragma: no cover
+        ResourceExhausted = ()  # type: ignore[assignment]
+
+    def _rate_limited(exc: Exception) -> LLMRateLimitError:
+        retry_after = _extract_retry_after(exc)
+        suffix = f" Bitte in ca. {retry_after}s erneut versuchen." if retry_after else ""
+        return LLMRateLimitError(
+            "Gemini-API-Limit erreicht (Free-Tier)." + suffix,
+            retry_after=retry_after,
+        )
+
+    gen_config = {"response_mime_type": "application/json"} if as_json else {}
+    try:
         model = genai.GenerativeModel(settings.gemini_model, **model_kwargs)
-        gen_config = {"response_mime_type": "application/json"} if as_json else {}
         response = model.generate_content(prompt, generation_config=gen_config)
+    except ResourceExhausted as exc:
+        # Provider-Quota: Fallback waere nur ein zweiter 429, daher direkt raus.
+        raise _rate_limited(exc) from exc
     except Exception:
-        if online:
-            # Fallback ohne Tool – Prompt enthaelt bereits den Online-Hinweis.
-            model = genai.GenerativeModel(settings.gemini_model)
-            gen_config = {"response_mime_type": "application/json"} if as_json else {}
-            response = model.generate_content(prompt, generation_config=gen_config)
-        else:
+        if not online:
             raise
+        # Fallback ohne Tool – Prompt enthaelt bereits den Online-Hinweis.
+        try:
+            model = genai.GenerativeModel(settings.gemini_model)
+            response = model.generate_content(prompt, generation_config=gen_config)
+        except ResourceExhausted as exc:
+            raise _rate_limited(exc) from exc
 
     text = getattr(response, "text", None)
     if not text:
