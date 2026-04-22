@@ -241,3 +241,21 @@ class HistoryItem(BaseModel):
 
 class HistoryOut(BaseModel):
     items: list[HistoryItem]
+
+
+class LLMAuditEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    created_at: datetime
+    username: str
+    kind: Literal["strategy", "competitor"]
+    prompt: str
+    response_raw: str | None
+    success: bool
+    error_message: str | None
+    duration_ms: int | None
+
+
+class LLMAuditList(BaseModel):
+    items: list[LLMAuditEntry]

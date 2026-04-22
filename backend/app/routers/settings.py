@@ -17,9 +17,11 @@ from app.schemas import (
     HTTPSEnableRequest,
     HTTPSEnableResponse,
     HTTPSStatus,
+    LLMAuditList,
     RateLimitConfig,
 )
 from app.services import app_settings as svc
+from app.services import llm_audit
 from app.services import seeding
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -185,3 +187,23 @@ def update_rate_limit(
         default_per_day=svc.rate_limit_for(db, is_admin=False),
         admin_per_day=svc.rate_limit_for(db, is_admin=True),
     )
+
+
+# --- LLM-Audit-Protokoll -------------------------------------------------
+
+
+@router.get("/llm-audit", response_model=LLMAuditList)
+def get_llm_audit(
+    user: Annotated[User, Depends(get_current_admin)],
+    db: Annotated[Session, Depends(get_db)],
+    limit: int = 200,
+) -> LLMAuditList:
+    """Audit-Eintraege aller KI-Anfragen, neueste zuerst.
+
+    Admin-only: Team-/Demo-Accounts haben keinen Zugriff. `limit` ist
+    zwischen 1 und 500 geklemmt – reicht fuer die Demo; echtes Paging
+    braeuchte eine Cursor-Variante.
+    """
+    limit = max(1, min(500, limit))
+    items = llm_audit.list_recent(db, limit=limit)
+    return LLMAuditList(items=items)

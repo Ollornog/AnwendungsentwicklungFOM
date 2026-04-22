@@ -42,6 +42,7 @@ class LLMStrategySuggestion:
     expression: str | None
     reasoning: str
     prompt: str  # der tatsaechlich an die KI geschickte Prompt (Transparenz)
+    raw_response: str  # Roh-Text der LLM-Antwort (fuer Audit-Log)
 
 
 @dataclass
@@ -51,6 +52,19 @@ class LLMCompetitorItem:
     product_id: str  # UUID als String, kommt 1:1 vom Request zurueck
     price: Decimal
     reasoning: str
+
+
+@dataclass
+class LLMCompetitorBatch:
+    """Ergebnis der batched Wettbewerbspreis-Schaetzung.
+
+    Neben den einzelnen Items enthaelt das Batch-Objekt den Prompt
+    und die Roh-Antwort – beide werden vom Audit-Service protokolliert.
+    """
+
+    items: list[LLMCompetitorItem]
+    prompt: str
+    raw_response: str
 
 
 def _parse_json(text: str) -> dict[str, Any]:
@@ -368,7 +382,12 @@ def suggest_strategy(
         if price < 0:
             raise LLMResponseError("LLM schlug negativen Preis vor")
         return LLMStrategySuggestion(
-            target="fix", amount=price, expression=None, reasoning=reasoning, prompt=prompt
+            target="fix",
+            amount=price,
+            expression=None,
+            reasoning=reasoning,
+            prompt=prompt,
+            raw_response=text,
         )
 
     expression = payload.get("expression")
@@ -380,7 +399,12 @@ def suggest_strategy(
     # Wrap immer selbst zu setzen. Wenn schon korrekt gewrappt, nicht doppeln.
     expression = _wrap_round2(expression)
     return LLMStrategySuggestion(
-        target="formula", amount=None, expression=expression, reasoning=reasoning, prompt=prompt
+        target="formula",
+        amount=None,
+        expression=expression,
+        reasoning=reasoning,
+        prompt=prompt,
+        raw_response=text,
     )
 
 
@@ -415,13 +439,18 @@ def _competitor_prompt(products: list[dict[str, Any]]) -> str:
     )
 
 
+def preview_competitor_prompt(products: list[dict[str, Any]]) -> str:
+    """Baut den gleichen Prompt wie `suggest_competitor_prices`, ohne LLM-Call."""
+    return _competitor_prompt(products)
+
+
 def suggest_competitor_prices(
     products: list[dict[str, Any]],
     api_key: str | None = None,
-) -> list[LLMCompetitorItem]:
+) -> LLMCompetitorBatch:
     """Batch-KI-Call: Wettbewerbspreis-Schaetzung fuer mehrere Produkte."""
     if not products:
-        return []
+        return LLMCompetitorBatch(items=[], prompt="", raw_response="")
     prompt = _competitor_prompt(products)
     text = _generate(prompt, online=False, as_json=True, api_key=api_key)
     import json as _json
@@ -457,4 +486,4 @@ def suggest_competitor_prices(
             continue
         reasoning = str(entry.get("reasoning", ""))[:400]
         items.append(LLMCompetitorItem(product_id=pid, price=price, reasoning=reasoning))
-    return items
+    return LLMCompetitorBatch(items=items, prompt=prompt, raw_response=text)

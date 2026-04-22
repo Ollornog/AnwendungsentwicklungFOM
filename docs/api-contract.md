@@ -72,6 +72,7 @@ wichtigsten Endpoints zusammen.
 | POST | `/settings/https/enable` | Let's-Encrypt-Zertifikat holen | ja |
 | GET | `/settings/rate-limit` | Aktuelle Tageslimits | ja |
 | PUT | `/settings/rate-limit` | Tageslimits ändern | ja |
+| GET | `/settings/llm-audit` | Audit-Log aller KI-Anfragen, neueste zuerst (Query-Param `limit`, 1–500, Default 200) | ja |
 
 ### Öffentlich
 

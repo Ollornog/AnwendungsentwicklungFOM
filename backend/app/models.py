@@ -157,6 +157,52 @@ class AppSetting(Base):
     )
 
 
+class LLMAudit(Base):
+    """Audit-Protokoll fuer jede KI-Anfrage.
+
+    Jeder Aufruf an den Gemini-Endpoint (Strategie-Vorschlag,
+    Wettbewerbspreise) wird hier festgehalten – Erfolg wie Fehler.
+    Admin-only einsehbar ueber `/api/v1/settings/llm-audit`.
+
+    Bewusstes Append-Only: keine Updates, kein Delete aus der UI.
+    `user_id` wird bei User-Loeschung auf NULL gesetzt, damit der
+    Verlauf erhalten bleibt. `username` ist denormalisiert, sodass
+    der Eintrag auch nach User-Loeschung lesbar bleibt.
+    """
+
+    __tablename__ = "llm_audit"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    username: Mapped[str] = mapped_column(String(64), nullable=False)
+    # `strategy` = Strategie-Vorschlag (fix/formula), `competitor` =
+    # Batch-Wettbewerbspreis-Schaetzung. Weitere Arten koennen spaeter
+    # ergaenzt werden, Check-Constraint einschraenken.
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    # Raw-Antwort nur bei Erfolg; bei LLMUnavailableError/RateLimit bleibt NULL.
+    response_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('strategy','competitor')", name="llm_audit_kind_check"
+        ),
+    )
+
+
 class PriceSuggestion(Base):
     __tablename__ = "price_suggestions"
 

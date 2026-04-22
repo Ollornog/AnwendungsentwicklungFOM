@@ -16,6 +16,7 @@ Persistiert in PostgreSQL. Migrationen via Alembic. Geldbeträge als
 | `price_suggestions` | Ephemere Vorschläge im Zwei-Schritt-Flow (Price → Confirm) | TTL via `SUGGESTION_TTL_MINUTES` |
 | `app_settings` | Key/Value-Store für Laufzeit-Konfiguration | Gemini-Key, HTTPS-Domain, Rate-Limits |
 | `api_rate_usage` | Tägliche API-Nutzungszähler pro Benutzer | (user_id, day) als zusammengesetzter PK |
+| `llm_audit` | Append-only-Log jeder Gemini-Anfrage (Strategie oder Wettbewerbspreise) | Zeit, User, Prompt, Roh-Antwort, Erfolg/Fehler; Admin-only einsehbar |
 
 ## ERD
 
@@ -133,3 +134,4 @@ anonymisiert sichtbar.
 | `0005_drop_daily_usage` | `daily_usage` entfernt – ersetzt durch Live-Slider `demand` |
 | `0006_api_rate_usage` | Tabelle `api_rate_usage` |
 | `0007_drop_legacy_strategies` | Check-Constraint auf `('fix','formula')` eingeengt, Alt-Einträge `rule`/`llm` gelöscht |
+| `0008_llm_audit` | Tabelle `llm_audit` (Prompt, Raw-Antwort, Erfolg/Fehler pro KI-Anfrage) |

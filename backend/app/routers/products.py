@@ -11,12 +11,14 @@ from app.llm import (
     LLMRateLimitError,
     LLMResponseError,
     LLMUnavailableError,
+    preview_competitor_prompt,
     preview_strategy_prompt,
     suggest_competitor_prices,
     suggest_strategy,
 )
 from app.models import PricingStrategy, Product, User
 from app.services import app_settings as app_settings_svc
+from app.services import llm_audit
 from app.schemas import (
     CompetitorPriceItem,
     CompetitorPricesResponse,
@@ -114,9 +116,20 @@ def suggest_competitor_prices_endpoint(
         for p in products
     ]
     api_key = app_settings_svc.gemini_api_key(db)
+    # Prompt vorher bauen, damit er auch im Fehlerfall in den Audit-Log
+    # wandert (LLMUnavailable/RateLimit liefern keinen Prompt zurueck).
+    prompt_for_audit = preview_competitor_prompt(payload)
+    import time as _time
+
+    started = _time.monotonic()
     try:
-        llm_items = suggest_competitor_prices(payload, api_key=api_key)
+        batch = suggest_competitor_prices(payload, api_key=api_key)
     except LLMRateLimitError as exc:
+        llm_audit.record(
+            db, user=user, kind="competitor", prompt=prompt_for_audit,
+            success=False, error_message=str(exc),
+            duration_ms=int((_time.monotonic() - started) * 1000),
+        )
         headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -124,16 +137,32 @@ def suggest_competitor_prices_endpoint(
             headers=headers,
         ) from exc
     except LLMUnavailableError as exc:
+        llm_audit.record(
+            db, user=user, kind="competitor", prompt=prompt_for_audit,
+            success=False, error_message=str(exc),
+            duration_ms=int((_time.monotonic() - started) * 1000),
+        )
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMResponseError as exc:
+        llm_audit.record(
+            db, user=user, kind="competitor", prompt=prompt_for_audit,
+            success=False, error_message=str(exc),
+            duration_ms=int((_time.monotonic() - started) * 1000),
+        )
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    llm_audit.record(
+        db, user=user, kind="competitor", prompt=batch.prompt or prompt_for_audit,
+        success=True, response_raw=batch.raw_response,
+        duration_ms=int((_time.monotonic() - started) * 1000),
+    )
 
     # KI-Antwort auf unsere Produkte mappen; Eintraege ohne Match
     # ignorieren, Reihenfolge stabil nach Produktname.
     by_id = {str(p.id): p for p in products}
     matched_items: list[CompetitorPriceItem] = []
     seen: set[str] = set()
-    for it in llm_items:
+    for it in batch.items:
         product = by_id.get(it.product_id)
         if product is None or it.product_id in seen:
             continue
@@ -270,6 +299,17 @@ def suggest_strategy_endpoint(
     product = _get_owned_product(db, user, product_id)
     whitelist = _strategy_whitelist(product)
     api_key = app_settings_svc.gemini_api_key(db)
+    # Prompt vorab, damit Fehlerpfade ihn ins Audit-Log mitnehmen koennen.
+    try:
+        prompt_for_audit = preview_strategy_prompt(
+            payload.target, payload.online, whitelist, fancy=payload.fancy
+        )
+    except LLMResponseError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    import time as _time
+
+    started = _time.monotonic()
     try:
         result = suggest_strategy(
             payload.target,
@@ -279,6 +319,11 @@ def suggest_strategy_endpoint(
             fancy=payload.fancy,
         )
     except LLMRateLimitError as exc:
+        llm_audit.record(
+            db, user=user, kind="strategy", prompt=prompt_for_audit,
+            success=False, error_message=str(exc),
+            duration_ms=int((_time.monotonic() - started) * 1000),
+        )
         headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after else None
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -286,9 +331,25 @@ def suggest_strategy_endpoint(
             headers=headers,
         ) from exc
     except LLMUnavailableError as exc:
+        llm_audit.record(
+            db, user=user, kind="strategy", prompt=prompt_for_audit,
+            success=False, error_message=str(exc),
+            duration_ms=int((_time.monotonic() - started) * 1000),
+        )
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except LLMResponseError as exc:
+        llm_audit.record(
+            db, user=user, kind="strategy", prompt=prompt_for_audit,
+            success=False, error_message=str(exc),
+            duration_ms=int((_time.monotonic() - started) * 1000),
+        )
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    llm_audit.record(
+        db, user=user, kind="strategy", prompt=result.prompt,
+        success=True, response_raw=result.raw_response,
+        duration_ms=int((_time.monotonic() - started) * 1000),
+    )
     return StrategySuggestResponse(
         target=result.target,
         amount=result.amount,

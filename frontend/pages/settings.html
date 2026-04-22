@@ -170,6 +170,71 @@
       </form>
     </article>
 
+    <article x-data="llmAuditAdmin()" x-show="$store.auth.isAdmin()" x-cloak>
+      <header><strong>KI-Audit-Protokoll</strong></header>
+      <p class="muted" style="font-size:0.85rem">
+        Append-only-Log jeder KI-Anfrage (Strategie-Vorschlag oder
+        Wettbewerbspreis-Batch). Enthält Zeit, Benutzer, Prompt,
+        Roh-Antwort von Gemini und den Erfolgsstatus.
+      </p>
+      <footer>
+        <button type="button" class="secondary outline"
+                @click="show()" :disabled="loading"
+                :aria-busy="loading">Einträge anzeigen</button>
+      </footer>
+
+      <div x-show="open" x-cloak class="modal-backdrop" @click.self="close()">
+        <article style="max-width: 1100px; width: 95%;">
+          <header>
+            <strong>KI-Audit-Protokoll</strong>
+            <span class="muted" style="font-size:0.85rem; margin-left:0.6rem"
+                  x-text="items.length + ' Einträge (neueste zuerst)'"></span>
+          </header>
+          <small class="error" x-show="error" x-text="error"></small>
+          <div style="max-height: 70vh; overflow:auto;">
+            <template x-for="e in items" :key="e.id">
+              <details class="audit-entry" style="border-top:1px solid #ddd; padding:0.5rem 0">
+                <summary style="cursor:pointer; display:flex; gap:0.8rem; align-items:baseline; flex-wrap:wrap">
+                  <code x-text="formatDate(e.created_at)" style="font-size:0.8rem"></code>
+                  <strong x-text="e.username"></strong>
+                  <span class="badge-ai"
+                        x-text="e.kind === 'strategy' ? 'Strategie' : 'Wettbewerb'"></span>
+                  <span :style="e.success ? 'color:green' : 'color:#c92a2a'"
+                        x-text="e.success ? '✓ erfolgreich' : '✗ Fehler'"></span>
+                  <small class="muted" x-show="e.duration_ms != null"
+                         x-text="e.duration_ms + ' ms'"></small>
+                </summary>
+                <div style="padding:0.4rem 0.2rem">
+                  <small class="muted">Prompt</small>
+                  <textarea readonly rows="6" class="ai-output" x-text="e.prompt"></textarea>
+                  <template x-if="e.response_raw">
+                    <div>
+                      <small class="muted">Roh-Antwort</small>
+                      <textarea readonly rows="6" class="ai-output" x-text="e.response_raw"></textarea>
+                    </div>
+                  </template>
+                  <template x-if="e.error_message">
+                    <div>
+                      <small class="muted">Fehlermeldung</small>
+                      <textarea readonly rows="3" class="ai-output" x-text="e.error_message"></textarea>
+                    </div>
+                  </template>
+                </div>
+              </details>
+            </template>
+            <p class="muted" x-show="!loading && items.length === 0"
+               style="padding:1rem">Keine Einträge.</p>
+          </div>
+          <footer>
+            <button type="button" class="secondary"
+                    @click="load()" :disabled="loading"
+                    :aria-busy="loading">Aktualisieren</button>
+            <button type="button" @click="close()">Schließen</button>
+          </footer>
+        </article>
+      </div>
+    </article>
+
     <article x-data="userAdmin()" x-init="load()" x-show="$store.auth.isAdmin()" x-cloak>
       <header><strong>Benutzerverwaltung</strong></header>
 
@@ -454,6 +519,41 @@
             this.state.error = e.message;
           } finally {
             this.state.saving = false;
+          }
+        },
+      };
+    }
+
+    function llmAuditAdmin() {
+      return {
+        open: false,
+        loading: false,
+        error: '',
+        items: [],
+
+        formatDate(iso) {
+          try { return new Date(iso).toLocaleString('de-DE'); } catch { return iso; }
+        },
+
+        async show() {
+          this.open = true;
+          await this.load();
+        },
+
+        close() {
+          this.open = false;
+        },
+
+        async load() {
+          this.loading = true;
+          this.error = '';
+          try {
+            const res = await window.api.get('/settings/llm-audit?limit=200');
+            this.items = res.items || [];
+          } catch (e) {
+            this.error = e.message;
+          } finally {
+            this.loading = false;
           }
         },
       };

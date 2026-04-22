@@ -131,6 +131,12 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   (Art. 45 DSGVO, Beschluss (EU) 2023/1795) als primäre Grundlage
   umgestellt, SCCs nur noch als Fallback. Neuer §8 „Preisangaben
   (PAngV)" in `legal.html`.
+- 2026-04-22 – KI-Audit-Protokoll: neue Tabelle `llm_audit`
+  (Migration 0008) loggt jede Gemini-Anfrage (Strategie-Vorschlag
+  und Wettbewerbspreis-Batch) mit Zeit, User, Prompt, Roh-Antwort
+  und Erfolg/Fehler. Admin-only einsehbar über
+  `GET /api/v1/settings/llm-audit` und als Modal im
+  Einstellungs-Dialog.
 
 ## 7. Offene Punkte
 
