@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     session_secret: str = "change-me"
     app_env: str = "development"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-2.5-flash-lite"
     frontend_dir: str = str(Path(__file__).resolve().parents[2] / "frontend")
     suggestion_ttl_minutes: int = 15
 

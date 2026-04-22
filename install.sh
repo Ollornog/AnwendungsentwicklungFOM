@@ -342,7 +342,7 @@ DATABASE_URL=postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_
 SESSION_SECRET=${session_secret}
 APP_ENV=production
 GEMINI_API_KEY=${GEMINI_API_KEY}
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-2.5-flash-lite
 FRONTEND_DIR=${APP_DIR}/frontend
 SUGGESTION_TTL_MINUTES=15
 EOF
