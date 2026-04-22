@@ -426,22 +426,21 @@ install_https_helper() {
 }
 
 smoke_test() {
-  log "Smoke-Test: Health-Endpoint"
-  local target
-  if $WITH_NGINX; then
-    target="http://127.0.0.1/api/v1/health"
-  else
-    target="http://127.0.0.1:8000/api/v1/health"
-  fi
-  # systemd-Start ist asynchron, kurzer Retry.
-  for _ in $(seq 1 20); do
-    if curl -fsS "$target" >/dev/null 2>&1; then
-      log "Health-Endpoint antwortet: $target"
+  log "Smoke-Test: Health-Endpoint (direkt am Backend-Port)"
+  # Bewusst direkt gegen 127.0.0.1:8000 statt ueber nginx: wenn HTTPS
+  # per UI aktiv ist, antwortet nginx auf Port 80 nur mit 301 auf HTTPS.
+  # Der Smoke-Test will aber "Backend lebt" bestaetigen, nicht die
+  # Reverse-Proxy-Kette. Der Backend-Port 8000 ist auf localhost immer
+  # erreichbar, egal ob HTTP oder HTTPS-Deployment.
+  local target="http://127.0.0.1:8000/api/v1/health"
+  for _ in $(seq 1 30); do
+    if curl -fsS --max-time 2 "$target" >/dev/null 2>&1; then
+      log "Backend antwortet: $target"
       return
     fi
     sleep 1
   done
-  warn "Health-Endpoint $target antwortet nicht. Prüfen: journalctl -u preisopt-backend -n 50"
+  warn "Backend $target antwortet nicht. Prüfen: journalctl -u preisopt-backend -n 50"
 }
 
 summary() {
