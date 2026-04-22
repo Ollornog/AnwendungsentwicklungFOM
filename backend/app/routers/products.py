@@ -6,7 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import get_current_user_rate_limited as get_current_user
+from app.deps import (
+    get_current_user as _get_current_user_plain,
+)
+from app.deps import (
+    get_current_user_rate_limited as get_current_user,
+)
 from app.llm import (
     LLMRateLimitError,
     LLMResponseError,
@@ -269,14 +274,17 @@ def upsert_strategy(
 def preview_prompt_endpoint(
     product_id: uuid.UUID,
     payload: StrategySuggestRequest,
-    user: Annotated[User, Depends(get_current_user)],
+    user: Annotated[User, Depends(_get_current_user_plain)],
     db: Annotated[Session, Depends(get_db)],
 ) -> StrategyPromptPreview:
     """Gibt nur den Prompt zurueck, ohne das LLM aufzurufen.
 
     Wird vom Modal genutzt, um die Frage an die KI sichtbar zu machen,
     sobald der User "KI fragen" klickt – noch bevor die eigentliche
-    (langsame) Antwort da ist.
+    (langsame) Antwort da ist. Bewusst ohne Rate-Limit-Dependency: ein
+    einzelner "KI fragen"-Klick ruft preview+suggest hintereinander auf
+    und wuerde sonst zwei Tages-Requests buchen, obwohl nur einer ans
+    LLM geht.
     """
     product = _get_owned_product(db, user, product_id)
     whitelist = _strategy_whitelist(product)

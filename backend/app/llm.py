@@ -122,11 +122,14 @@ def _generate(
     genai.configure(api_key=effective_key)
 
     # Google-Search-Grounding fuer den Online-Modus.
-    # Die Tool-API hat sich zwischen Gemini-Modellen geaendert; wir
-    # versuchen es optimistisch, fallen bei Fehlern auf einen reinen
-    # Prompt-Hinweis zurueck (siehe suggest_strategy()).
+    # Wichtig: `tools` + `response_mime_type=application/json` ist bei
+    # Gemini historisch problematisch – die Kombination endet oft mit
+    # einem Server-Error, wobei der Request aber schon gegen das
+    # RPM-Limit gezaehlt wurde. Da unsere LLM-Aufrufe strukturiertes
+    # JSON brauchen, lassen wir das Tool in diesem Fall weg; der Prompt
+    # enthaelt ohnehin den Hinweis "Recherchiere marktuebliche Preise".
     model_kwargs: dict[str, Any] = {}
-    if online:
+    if online and not as_json:
         model_kwargs["tools"] = [{"google_search_retrieval": {}}]
 
     try:

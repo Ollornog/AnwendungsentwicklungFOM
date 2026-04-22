@@ -105,11 +105,13 @@ document.addEventListener('alpine:init', () => {
     aiLoading: false,
     aiPrompt: '',
     aiReasoning: '',
-    // True, solange die Werte in amount/expression unveraendert aus der
-    // letzten KI-Antwort kommen. Jeder manuelle Edit (Input, Token-Klick,
-    // Modal-Reset) setzt das Flag zurueck, damit nur "echte" KI-Uebernahmen
-    // den Historien-Snapshot als KI-Vorschlag markieren.
-    aiUsed: false,
+    // Gemerkte KI-Vorschlagswerte fuer den Save-Zeitpunkt. Beim
+    // Speichern vergleichen wir amount/expression mit diesen Werten;
+    // nur bei exakter Uebereinstimmung gilt der Eintrag als KI-Vorschlag
+    // und landet mit is_llm_suggestion=true in der Historie. Robust
+    // gegen Event-Timing (kein @input-Listener noetig).
+    aiSuggestedAmount: null,
+    aiSuggestedExpression: null,
     saving: false,
     error: '',
     tokenGroups: TOKEN_GROUPS,
@@ -119,7 +121,8 @@ document.addEventListener('alpine:init', () => {
       this.error = '';
       this.aiPrompt = '';
       this.aiReasoning = '';
-      this.aiUsed = false;
+      this.aiSuggestedAmount = null;
+      this.aiSuggestedExpression = null;
       this.useAi = false;
       this.online = false;
       this.fancy = false;
@@ -155,8 +158,6 @@ document.addEventListener('alpine:init', () => {
       const before = this.expression.slice(0, start);
       const after = this.expression.slice(end);
       this.expression = before + text + after;
-      // Token eingefuegt = manueller Edit, Wert ist nicht mehr pur KI.
-      this.aiUsed = false;
       // naechster Tick, damit Alpine das Input-Update uebernommen hat.
       this.$nextTick(() => {
         el.focus();
@@ -196,21 +197,22 @@ document.addEventListener('alpine:init', () => {
           `/products/${this.product.id}/strategy/suggest`,
           body,
         );
-        let accepted = false;
         if (res.target === 'fix' && res.amount != null) {
-          this.amount = res.amount;
-          accepted = true;
+          // Als String merken und setzen, damit der Vergleich beim Save
+          // robust gegen Number/String-Konversionen im <input type=number> ist.
+          const asStr = String(res.amount);
+          this.amount = asStr;
+          this.aiSuggestedAmount = asStr;
+          this.aiSuggestedExpression = null;
         } else if (res.target === 'formula' && res.expression) {
           this.expression = res.expression;
-          accepted = true;
+          this.aiSuggestedExpression = res.expression;
+          this.aiSuggestedAmount = null;
         }
         this.aiReasoning = res.reasoning || '';
         // Der Prompt aus der Suggest-Response ist autoritativ (falls der
         // Server den Prompt in der Zwischenzeit leicht angepasst hat).
         if (res.prompt) this.aiPrompt = res.prompt;
-        // KI-Wert wurde ins Feld uebernommen – bis zum naechsten manuellen
-        // Edit gilt der Wert als KI-Vorschlag.
-        this.aiUsed = accepted;
       } catch (e) {
         this.error = e.message;
       } finally {
@@ -218,8 +220,24 @@ document.addEventListener('alpine:init', () => {
       }
     },
 
+    // True, wenn der aktuell sichtbare Wert im Feld unveraendert aus
+    // dem letzten KI-Vorschlag stammt. Beim Speichern entscheidet das
+    // ueber `from_llm` und damit ueber das KI-Badge in der Historie.
+    isFromAi() {
+      if (this.target === 'fix') {
+        if (this.aiSuggestedAmount == null) return false;
+        return String(this.amount).trim() === String(this.aiSuggestedAmount).trim();
+      }
+      if (this.target === 'formula') {
+        if (!this.aiSuggestedExpression) return false;
+        return (this.expression || '').trim() === this.aiSuggestedExpression.trim();
+      }
+      return false;
+    },
+
     async save() {
       if (!this.product) return;
+      const fromLlm = this.isFromAi();
       let payload;
       if (this.target === 'fix') {
         const amt = Number(this.amount);
@@ -227,14 +245,14 @@ document.addEventListener('alpine:init', () => {
           this.error = 'Fixpreis muss eine Zahl >= 0 sein.';
           return;
         }
-        payload = { kind: 'fix', config: { amount: amt }, from_llm: this.aiUsed };
+        payload = { kind: 'fix', config: { amount: amt }, from_llm: fromLlm };
       } else {
         const expr = (this.expression || '').trim();
         if (!expr) {
           this.error = 'Formel darf nicht leer sein.';
           return;
         }
-        payload = { kind: 'formula', config: { expression: expr }, from_llm: this.aiUsed };
+        payload = { kind: 'formula', config: { expression: expr }, from_llm: fromLlm };
       }
       this.saving = true;
       this.error = '';
