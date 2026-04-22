@@ -31,7 +31,18 @@ def ensure_admin_and_mock_products(
     mock_products: Iterable[dict],
     mock_users: Iterable[dict] | None = None,
 ) -> SeedResult:
-    """Legt Admin an (falls fehlt), fuellt Mock-Produkte und Demo-User idempotent."""
+    """Legt Admin an (falls fehlt), fuellt Mock-Produkte und Demo-User idempotent.
+
+    Seed-Produkte werden nicht nur dem Admin angelegt, sondern auch jedem
+    frisch angelegten Team-/Demo-User in `mock_users` – damit jeder
+    Login-Account direkt nach dem ersten Start seine eigenen Produkte
+    zum Ausprobieren hat. Bestehende User bleiben unangetastet
+    (keine Duplikate).
+    """
+    # Das Iterable koennte ein Generator sein – wir konsumieren die
+    # Produkte mehrfach (einmal pro User), also in eine Liste ziehen.
+    products_list = list(mock_products)
+
     user = db.scalar(select(User).where(User.username == username))
     user_created = False
     if user is None:
@@ -44,6 +55,27 @@ def ensure_admin_and_mock_products(
         db.flush()
         user_created = True
 
+    added = _add_missing_products(db, user, products_list)
+
+    extra_users_added = ensure_demo_users(db, mock_users or [], products_list)
+
+    db.commit()
+    return SeedResult(
+        user_created=user_created,
+        user_missing_password=False,
+        products_added=added,
+        extra_users_added=extra_users_added,
+    )
+
+
+def _add_missing_products(
+    db: Session, user: User, mock_products: Iterable[dict]
+) -> int:
+    """Fuegt Mock-Produkte dem User hinzu, ueberspringt bereits vorhandene.
+
+    Matching per Produktname – reicht fuer eine Demo, weil der Seed eine
+    fixe Liste mit eindeutigen Namen ist.
+    """
     existing_names = set(
         db.scalars(select(Product.name).where(Product.owner_id == user.id)).all()
     )
@@ -59,24 +91,23 @@ def ensure_admin_and_mock_products(
         )
         db.add(product)
         added += 1
-
-    extra_users_added = ensure_demo_users(db, mock_users or [])
-
-    db.commit()
-    return SeedResult(
-        user_created=user_created,
-        user_missing_password=False,
-        products_added=added,
-        extra_users_added=extra_users_added,
-    )
+    return added
 
 
-def ensure_demo_users(db: Session, mock_users: Iterable[dict]) -> int:
+def ensure_demo_users(
+    db: Session,
+    mock_users: Iterable[dict],
+    mock_products: Iterable[dict] | None = None,
+) -> int:
     """Sorgt dafuer, dass die Team-Demo-Accounts existieren.
 
     Idempotent pro Username: bestehende Accounts werden nicht angefasst
-    (auch kein Passwort-Reset). Rueckgabe: Anzahl neu angelegter User.
+    (auch kein Passwort-Reset). Fuer jeden **neu angelegten** User werden
+    zusaetzlich die Mock-Produkte als Startset angelegt, damit jeder
+    Account direkt eine spielbare Demo hat. Rueckgabe: Anzahl neu
+    angelegter User.
     """
+    products_list = list(mock_products or [])
     added = 0
     for spec in mock_users:
         username = spec.get("username")
@@ -84,13 +115,15 @@ def ensure_demo_users(db: Session, mock_users: Iterable[dict]) -> int:
             continue
         if db.scalar(select(User).where(User.username == username)) is not None:
             continue
-        db.add(
-            User(
-                username=username,
-                password_hash=hash_password(spec["password"]),
-                role=spec.get("role", "admin"),
-            )
+        new_user = User(
+            username=username,
+            password_hash=hash_password(spec["password"]),
+            role=spec.get("role", "admin"),
         )
+        db.add(new_user)
+        db.flush()  # user.id verfuegbar machen
+        if products_list:
+            _add_missing_products(db, new_user, products_list)
         added += 1
     return added
 

@@ -388,8 +388,19 @@ install_systemd() {
 install_nginx() {
   $WITH_NGINX || { log "nginx übersprungen (--no-nginx). Backend lauscht auf 127.0.0.1:8000."; return; }
   log "nginx: Reverse-Proxy konfigurieren"
-  install -m 0644 "$APP_DIR/deploy/nginx-preisopt.conf" /etc/nginx/sites-available/preisopt
-  ln -sf /etc/nginx/sites-available/preisopt /etc/nginx/sites-enabled/preisopt
+  local site=/etc/nginx/sites-available/preisopt
+  # Wenn HTTPS per UI aktiviert wurde, hat certbot die Site-Datei um
+  # 'listen 443 ssl' + Zertifikats-Pfade ergaenzt und einen zweiten
+  # Server-Block fuer den HTTP->HTTPS-Redirect angehaengt. Das Original
+  # aus dem Repo waere reines HTTP und wuerde HTTPS wieder deaktivieren.
+  # Das Let's-Encrypt-Zertifikat in /etc/letsencrypt bleibt ohnehin
+  # unberuehrt; hier nur die Site-Konfig schonen.
+  if [[ -f "$site" ]] && grep -qE '^[[:space:]]*listen[[:space:]].*ssl' "$site"; then
+    log "nginx: HTTPS-Konfiguration erkannt – Site-Datei bleibt unveraendert (Zertifikat bleibt aktiv)"
+  else
+    install -m 0644 "$APP_DIR/deploy/nginx-preisopt.conf" "$site"
+  fi
+  ln -sf "$site" /etc/nginx/sites-enabled/preisopt
   rm -f /etc/nginx/sites-enabled/default
   nginx -t
   systemctl enable --now nginx >/dev/null 2>&1 || true

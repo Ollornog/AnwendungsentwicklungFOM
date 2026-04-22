@@ -16,6 +16,8 @@ MOCK_USERS: list[dict] = [
     {"username": "Okan", "password": "Baykal", "role": "admin"},
     {"username": "Sven", "password": "Schlickewei", "role": "admin"},
     {"username": "Tamara", "password": "Bezrodnow", "role": "admin"},
+    # Lehrender im Modul (Pruefer), eigener Account zum Einsehen der Demo.
+    {"username": "Johannes", "password": "Kurik", "role": "admin"},
     # Oeffentlicher Demo-Zugang (siehe README). Der bootstrap-"admin"
     # bleibt davon unberuehrt, weil die Admin-only-Bereiche
     # (HTTPS, Rate Limit, User-CRUD) ueber username == 'admin' geschuetzt

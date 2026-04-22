@@ -137,6 +137,14 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   und Erfolg/Fehler. Admin-only einsehbar über
   `GET /api/v1/settings/llm-audit` und als Modal im
   Einstellungs-Dialog.
+- 2026-04-22 – Seed: jeder frisch angelegte Team-/Demo-User erhält
+  beim ersten Start (bzw. `install.sh`-Lauf) die kompletten
+  Mock-Produkte als persönliches Startset; bestehende Accounts
+  bleiben unberührt. Lehrender `Johannes` (PW `Kurik`) neu im Seed.
+- 2026-04-22 – `install.sh`: Ein Re-Run überschreibt die
+  `sites-available/preisopt` nicht mehr, wenn die Datei bereits
+  einen `listen … ssl`-Block enthält. HTTPS-Deployment und
+  Let's-Encrypt-Zertifikat bleiben über Updates hinweg erhalten.
 
 ## 7. Offene Punkte
 
