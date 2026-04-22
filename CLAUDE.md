@@ -72,7 +72,7 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
 | [`docs/compliance.md`](./docs/compliance.md) | DSGVO, AI Act, UWG/PAngV – knapp |
 | [`docs/security.md`](./docs/security.md) | TOMs-Tabelle Prototyp vs. Produktiv |
 | [`docs/requirements.md`](./docs/requirements.md) | Anforderungs-Dokument |
-| `docs/decisions/` | ADRs 0001–0005 |
+| `docs/decisions/` | ADRs 0001–0006 |
 
 ## 5. Abdeckung Modulanforderungen
 
@@ -121,6 +121,10 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   Check-Constraint entfernt (Migration 0007). KI-Vorschläge bleiben
   als Hilfswerkzeug im Strategie-Modal, erzeugen aber `fix`- oder
   `formula`-Einträge.
+- 2026-04-22 – Gemini-API-Key auf admin-only gezogen (Frontend +
+  `get_current_admin` für `GET`/`PUT /settings`). Strategie-Snapshot
+  trägt das KI-Badge nun nur, wenn der gespeicherte Wert unverändert
+  aus dem KI-Vorschlag stammt (ADR 0006).
 
 ## 7. Offene Punkte
 
