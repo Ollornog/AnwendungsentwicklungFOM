@@ -210,7 +210,7 @@
           <label x-show="useAi" style="margin-left:1.5rem">
             <input type="checkbox" x-model="online"> Online recherchieren
           </label>
-          <label x-show="useAi" style="margin-left:1.5rem">
+          <label x-show="useAi && target === 'formula'" style="margin-left:1.5rem">
             <input type="checkbox" x-model="fancy"> Ausführlich (komplexere Formel)
           </label>
           <div x-show="useAi">

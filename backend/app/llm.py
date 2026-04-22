@@ -206,7 +206,9 @@ def _strategy_prompt(
             "Produkte in Deutschland und beziehe die Ergebnisse in deine "
             "Empfehlung ein.\n"
         )
-    if fancy:
+    # `fancy` spielt nur bei formula eine Rolle – bei einem einzelnen
+    # Fixpreis gibt es nichts zu "kombinieren".
+    if fancy and target == "formula":
         base += (
             "\nDemo-Kontext: das ist eine Vorfuehr-Umgebung. Ruhig ausfuehrlich "
             "werden und mehrere Effekte kombinieren (Tageszeit, Wochentag, "
@@ -267,12 +269,47 @@ def _strategy_prompt(
             "# Preis steigt sanft bei sinkendem Lager\n"
             "     competitor_price - 0.5 + 0.8 * pow(1 - stock / start_stock, 2)   "
             "# quadratischer Aufschlag nahe Null\n"
-            " - Wickel die finale Formel in `round(..., 2)`, damit der "
-            "Preis immer zwei Nachkommastellen hat.\n"
+            " - Runden auf zwei Nachkommastellen uebernimmt der Server "
+            "automatisch; du brauchst `round(..., 2)` nicht manuell zu setzen.\n"
             'Antworte als JSON: {"expression": "<formel>", "reasoning": '
             '"<kurz, max 2 Saetze>"}. Kein Freitext drum herum.'
         )
     return base
+
+
+def _is_round2_wrapped(expression: str) -> bool:
+    """True, wenn `expression` bereits als `round(<x>, 2)` vorliegt.
+
+    Prueft via Klammer-Depth, dass die initiale `round(` den kompletten
+    Ausdruck umschliesst, und dass das aeussere Argument auf `, 2` endet.
+    """
+    expr = expression.strip()
+    if not (expr.startswith("round(") and expr.endswith(")")):
+        return False
+    depth = 0
+    for i, ch in enumerate(expr[5:], start=5):  # Klammer-Run ab "round("
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                # Passt nur, wenn die erste schliessende Klammer auf Tiefe 0
+                # die allerletzte ist – also der Ausdruck komplett umfasst ist.
+                if i != len(expr) - 1:
+                    return False
+                import re
+
+                inner = expr[6:i]  # ohne "round(" und das finale ")"
+                return bool(re.search(r",\s*2\s*$", inner))
+    return False
+
+
+def _wrap_round2(expression: str) -> str:
+    """Stellt sicher, dass die Formel auf zwei Nachkommastellen rundet."""
+    expr = expression.strip()
+    if _is_round2_wrapped(expr):
+        return expr
+    return f"round({expr}, 2)"
 
 
 def _validate_expression(expression: str) -> None:
@@ -339,6 +376,9 @@ def suggest_strategy(
         raise LLMResponseError("LLM-Antwort ohne 'expression'-Feld")
     expression = expression.strip()
     _validate_expression(expression)
+    # Runden erzwingen: das LLM ist nicht zuverlaessig genug, den round(.., 2)-
+    # Wrap immer selbst zu setzen. Wenn schon korrekt gewrappt, nicht doppeln.
+    expression = _wrap_round2(expression)
     return LLMStrategySuggestion(
         target="formula", amount=None, expression=expression, reasoning=reasoning, prompt=prompt
     )
