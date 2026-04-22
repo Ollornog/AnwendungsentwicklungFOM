@@ -125,6 +125,12 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   `get_current_admin` für `GET`/`PUT /settings`). Strategie-Snapshot
   trägt das KI-Badge nun nur, wenn der gespeicherte Wert unverändert
   aus dem KI-Vorschlag stammt (ADR 0006).
+- 2026-04-22 – Compliance-Review-Restarbeiten: Drittlandtransfer-
+  Formulierung in `legal.html`, `compliance.html` und
+  `docs/compliance.md` auf das **EU-US Data Privacy Framework**
+  (Art. 45 DSGVO, Beschluss (EU) 2023/1795) als primäre Grundlage
+  umgestellt, SCCs nur noch als Fallback. Neuer §8 „Preisangaben
+  (PAngV)" in `legal.html`.
 
 ## 7. Offene Punkte
 

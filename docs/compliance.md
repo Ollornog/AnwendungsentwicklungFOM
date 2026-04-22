@@ -29,7 +29,7 @@ Abstimmungen für die Modulabgabe zusammen.
 | Art. 30 | Verzeichnis von Verarbeitungstätigkeiten | ✅ Interne Langfassung `/pages/compliance.html` |
 | Art. 32 | TOMs | ✅ Tabelle in [`security.md`](./security.md) |
 | Art. 35 | DSFA | 🔶 Kurzprüfung (nicht erforderlich) dokumentiert, Langfassung fürs Produktivum |
-| Art. 44 ff. | Drittlandtransfer (Gemini/US) | ✅ SCC-Grundlage, nur Produktdaten im Prompt |
+| Art. 44 ff. | Drittlandtransfer (Gemini/US) | ✅ Primär EU-US Data Privacy Framework (Art. 45, Beschluss (EU) 2023/1795, Google LLC DPF-zertifiziert); SCCs nach Art. 46 als Fallback; nur Produktdaten im Prompt |
 | Art. 77 | Beschwerderecht | ✅ In `/pages/legal.html` genannt |
 
 ## EU AI Act
@@ -54,7 +54,7 @@ ein **KI-System mit begrenztem Risiko** (Transparenzpflicht):
 | Thema | Status |
 | --- | --- |
 | Irreführung durch Preis (§ 5 UWG) | 🔶 Sanity-Check: negative Preise werden geblockt; Plausibilitätsprüfung auf Formel-Ergebnisse empfohlen |
-| Grundpreis-/Endpreis-Angabe (PAngV) | 📝 Nicht im Scope – kein Endkundenverkauf |
+| Grundpreis-/Endpreis-Angabe (PAngV) | 📝 Nicht im Scope – kein Endkundenverkauf; expliziter Hinweis in `/pages/legal.html` §8 |
 | MwSt.-Ausweis | 📝 Nicht im Scope – nur interne Preisoptimierung |
 
 ## NIS-2
