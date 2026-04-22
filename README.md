@@ -18,9 +18,6 @@ Schlickewei. Abschlusspräsentation 16.07.2026. Details zum Auftrag in
 - Benutzer: `Demo`
 - Passwort: `DemoUser`
 
-Der Demo-Account sieht das vollständige UI; für Admin-Bereiche (HTTPS,
-Benutzer, Rate Limit) meldet sich der Lehrende unter `admin` an.
-
 ## Quickstart (Debian 12)
 
 ```bash
