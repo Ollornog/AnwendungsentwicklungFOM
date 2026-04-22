@@ -3,7 +3,7 @@
 | \# | Block | Zeit | Sprecher | Inhalt |
 | ----- | ----- | ----- | ----- | ----- |
 | 1 | Hook | 0:15 | **Okan** | „Jeder Onlineshop entscheidet täglich, was ein Produkt kosten soll …" → Cut Titel |
-| 2 | Titel \+ Teamvorstellung | 0:45 | **alle 5,je \~9 Sek** | Name, Rolle, ein Beitragssatz |
+| 2 | Titel \+ Teamvorstellung | 0:45 | **alle 5, je \~9 Sek** | Name, Rolle, ein Beitragssatz |
 | 3 | Problem & Idee | 0:45 | **Tamara** | Was wir lösen, Human-in-the-Loop als Leitprinzip |
 | 4 | Architektur-Überblick | 0:45 | **Daniel** | Ein Diagramm, drei Sätze: Frontend → API → DB, Gemini außen |
 | 5a | Demo – Produkt anlegen \+ Fixpreis | 0:45 | **Tamara** (Voiceover) | Formular, Felder, Fixpreis speichern |
@@ -11,7 +11,7 @@
 | 5c | Demo – KI-Vorschlag \+ Transparenz | 1:00 | **Okan** (Voiceover) | Prompt-Preview, Vorschlag, Human-in-the-Loop-Übernahme |
 | 5d | Demo – Simulator- Dynamik | 0:45 | **Daniel** (Voiceover) | Slider bewegen, Preis rechnet nach |
 | 5e | Demo – Graph \+ Historie | 1:00 | **Kayathiri** (Voiceover) | Preisgraph, Historie mit KI-Badge, Verweis auf Audit-Trail |
-| 6 | Rollenverteilung & Zusammenarbeit | 1:15 | **5 Sprecherje \~15 Sek** | Jede:r ein Satz zur eigenen Rolle \+ prägnante Erkenntnis |
+| 6 | Rollenverteilung & Zusammenarbeit | 1:15 | **5 Sprecher je \~15 Sek** | Jede:r ein Satz zur eigenen Rolle \+ prägnante Erkenntnis |
 | 7 | Fazit | 0:35 | **Sven** | Was wir gebaut haben, was wir gelernt haben, URL \+ Repo |
 | 8 | Outro | 0:15 | stumm | Titelkarte „Fragen beantworten wir live" |
 
