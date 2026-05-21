@@ -105,6 +105,7 @@
                   <button class="secondary outline" @click="openGraph(p)" title="Preis grafisch je Variable">Graph</button>
                   <button class="secondary outline" @click="editProduct(p)" title="Produktdaten bearbeiten">Bearbeiten</button>
                   <a :href="`/pages/history.html?id=${p.id}`" role="button" class="secondary outline" title="Preishistorie">Historie</a>
+                  <button class="secondary outline" @click="deleteProduct(p)" :disabled="p._deleting" :aria-busy="p._deleting" title="Produkt löschen">Löschen</button>
                 </td>
               </tr>
             </template>
@@ -402,6 +403,7 @@
           p._current_stock = Number(p.stock) || 0;
           // Nachfrage-Faktor: 0..2, Default 1 (neutral).
           p._demand = 1;
+          p._deleting = false;
         },
 
         togglePause() {
@@ -465,6 +467,21 @@
 
         editProduct(p) {
           window.dispatchEvent(new CustomEvent('open-product-form', { detail: p }));
+        },
+
+        async deleteProduct(p) {
+          if (!window.confirm(`Produkt „${p.name}" wirklich löschen? Die Preishistorie wird mitentfernt.`)) {
+            return;
+          }
+          p._deleting = true;
+          this.error = '';
+          try {
+            await window.api.del(`/products/${p.id}`);
+            this.products = this.products.filter((x) => x.id !== p.id);
+          } catch (e) {
+            this.error = e.message;
+            p._deleting = false;
+          }
         },
 
         varsFor(p) {
