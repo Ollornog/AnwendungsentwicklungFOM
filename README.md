@@ -15,7 +15,7 @@ Schlickewei. Abschlusspräsentation 16.07.2026. Details zum Auftrag in
 ## Demo
 
 - URL: <https://fom.ollornog.de/>
-- Benutzer / Passwort (vier gleichwertige Zugänge):
+- Benutzer / Passwort:
   - `Demo` / `DemoUser`
 
 Jeder Account hat sein eigenes Mock-Produktset; in einer Vorführung
