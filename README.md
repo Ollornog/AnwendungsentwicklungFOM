@@ -15,8 +15,14 @@ Schlickewei. Abschlusspräsentation 16.07.2026. Details zum Auftrag in
 ## Demo
 
 - URL: <https://fom.ollornog.de/>
-- Benutzer: `Demo`
-- Passwort: `DemoUser`
+- Benutzer / Passwort (vier gleichwertige Zugänge):
+  - `Demo` / `DemoUser`
+  - `Demo1` / `DemoUser1`
+  - `Demo2` / `DemoUser2`
+  - `Demo3` / `DemoUser3`
+
+Jeder Account hat sein eigenes Mock-Produktset; in einer Vorführung
+kann so jeder Zuschauer parallel ausprobieren.
 
 ## Quickstart (Debian 12)
 
