@@ -198,9 +198,11 @@ document.addEventListener('alpine:init', () => {
           body,
         );
         if (res.target === 'fix' && res.amount != null) {
-          // Als String merken und setzen, damit der Vergleich beim Save
-          // robust gegen Number/String-Konversionen im <input type=number> ist.
-          const asStr = String(res.amount);
+          // Als 2-Dezimalstellen-String merken und setzen: zeigt einen
+          // sauberen EUR-Betrag und wird von parsePrice (Trenner-Heuristik)
+          // korrekt als Dezimalwert gewertet.
+          const num = Number(res.amount);
+          const asStr = Number.isFinite(num) ? num.toFixed(2) : String(res.amount);
           this.amount = asStr;
           this.aiSuggestedAmount = asStr;
           this.aiSuggestedExpression = null;
@@ -240,8 +242,8 @@ document.addEventListener('alpine:init', () => {
       const fromLlm = this.isFromAi();
       let payload;
       if (this.target === 'fix') {
-        const amt = Number(this.amount);
-        if (!Number.isFinite(amt) || amt < 0) {
+        const amt = window.parsePrice(this.amount);
+        if (amt === null || !Number.isFinite(amt) || amt < 0) {
           this.error = 'Fixpreis muss eine Zahl >= 0 sein.';
           return;
         }
