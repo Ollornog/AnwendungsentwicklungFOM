@@ -149,8 +149,8 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   und Strategie-Modal nutzen `type="text"` (statt `type="number"`)
   und werden über `frontend/js/parse-price.js` (`parsePrice` /
   `parseQuantity`) geparst. Punkte und Kommas gelten als
-  Tausendertrenner und werden entfernt; nur zwei Ziffern rechts vom
-  letzten Trenner werden als Dezimaltrenner gewertet. Behebt, dass
+  Tausendertrenner und werden entfernt; ein oder zwei Ziffern rechts
+  vom letzten Trenner werden als Dezimaltrenner gewertet. Behebt, dass
   „1.000" als 1 € interpretiert wurde.
 
 ## 7. Offene Punkte

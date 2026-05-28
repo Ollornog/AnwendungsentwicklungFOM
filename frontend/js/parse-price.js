@@ -9,8 +9,8 @@
 // Regel (vom Team festgelegt):
 //   - Punkte UND Kommas gelten grundsaetzlich als Tausendertrenner und
 //     werden entfernt.
-//   - Ausnahme: stehen rechts vom *letzten* Trenner genau zwei Ziffern,
-//     wird dieser Trenner als Dezimaltrenner gewertet (Cent-Betrag).
+//   - Ausnahme: stehen rechts vom *letzten* Trenner ein oder zwei
+//     Ziffern, wird dieser Trenner als Dezimaltrenner gewertet.
 //
 // Beispiele:
 //   "1.000"      -> 1000      (Punkt, 3 Stellen rechts -> Tausender)
@@ -18,6 +18,7 @@
 //   "1,000.50"   -> 1000.5    (Punkt + 2 Stellen -> Dezimal, Komma raus)
 //   "9,99"       -> 9.99      (Komma + 2 Stellen -> Dezimal)
 //   "10.50"      -> 10.5      (Punkt + 2 Stellen -> Dezimal)
+//   "1,5"        -> 1.5       (Komma + 1 Stelle -> Dezimal)
 //   "1.234.567"  -> 1234567
 //   ""           -> null
 (function () {
@@ -43,7 +44,7 @@
       result = Number(s);
     } else {
       const fraction = s.slice(lastSep + 1);
-      if (/^\d{2}$/.test(fraction)) {
+      if (/^\d{1,2}$/.test(fraction)) {
         // Letzter Trenner ist Dezimaltrenner: restliche Trenner entfernen.
         const integerPart = s.slice(0, lastSep).replace(/[.,]/g, '');
         result = Number((integerPart || '0') + '.' + fraction);
