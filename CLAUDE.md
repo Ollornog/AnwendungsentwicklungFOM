@@ -145,6 +145,13 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   `sites-available/preisopt` nicht mehr, wenn die Datei bereits
   einen `listen … ssl`-Block enthält. HTTPS-Deployment und
   Let's-Encrypt-Zertifikat bleiben über Updates hinweg erhalten.
+- 2026-05-28 – Bugfix Preis-Eingabe: Preis-/Mengenfelder im Produkt-
+  und Strategie-Modal nutzen `type="text"` (statt `type="number"`)
+  und werden über `frontend/js/parse-price.js` (`parsePrice` /
+  `parseQuantity`) geparst. Punkte und Kommas gelten als
+  Tausendertrenner und werden entfernt; nur zwei Ziffern rechts vom
+  letzten Trenner werden als Dezimaltrenner gewertet. Behebt, dass
+  „1.000" als 1 € interpretiert wurde.
 
 ## 7. Offene Punkte
 

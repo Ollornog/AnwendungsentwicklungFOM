@@ -60,13 +60,13 @@ document.addEventListener('alpine:init', () => {
       return {
         name: this.name,
         category: this.category,
-        cost_price: Number(this.cost_price),
-        stock: Number(this.stock),
+        cost_price: window.parsePrice(this.cost_price),
+        stock: window.parseQuantity(this.stock),
         competitor_price:
           this.competitor_price === null || this.competitor_price === ''
             ? null
-            : Number(this.competitor_price),
-        monthly_demand: Number(this.monthly_demand) || 0,
+            : window.parsePrice(this.competitor_price),
+        monthly_demand: window.parseQuantity(this.monthly_demand) || 0,
         context: this.context || '',
       };
     },

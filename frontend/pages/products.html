@@ -132,17 +132,17 @@
           </div>
           <div class="grid">
             <label>Einkaufspreis (EUR)
-              <input type="number" step="0.01" min="0" x-model="cost_price" required>
+              <input type="text" inputmode="decimal" x-model="cost_price" required>
             </label>
             <label>Wettbewerbspreis (EUR)
-              <input type="number" step="0.01" min="0" x-model="competitor_price">
+              <input type="text" inputmode="decimal" x-model="competitor_price">
             </label>
             <label>Verbrauch / Monat
-              <input type="number" min="0" step="1" x-model="monthly_demand">
+              <input type="text" inputmode="numeric" x-model="monthly_demand">
             </label>
           </div>
           <label>Lagergröße
-            <input type="number" min="0" step="1" x-model="stock" required>
+            <input type="text" inputmode="numeric" x-model="stock" required>
           </label>
           <label>Kontext (für KI-Vorschlag)
             <textarea rows="3" x-model="context"
@@ -180,7 +180,7 @@
 
         <div x-show="target === 'fix'">
           <label>Betrag (EUR)
-            <input type="number" step="0.01" min="0" x-model="amount">
+            <input type="text" inputmode="decimal" x-model="amount">
           </label>
         </div>
 
@@ -355,6 +355,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/store.js"></script>
+  <script src="/js/parse-price.js"></script>
   <script src="/js/formula-eval.js"></script>
   <script src="/js/components/product-form-modal.js"></script>
   <script src="/js/components/price-strategy-modal.js"></script>
