@@ -8,8 +8,10 @@ Arbeit lesen, nach jeder substanziellen Änderung mitziehen.
 Web-Tool „KI-gestützte Preisoptimierung im E-Commerce", Studienprojekt
 im Modul *Projekt Anwendungsentwicklung*, FOM Hochschule, Wirtschafts-
 informatik B.Sc., Lehrender **Johannes Kurik**. Team: **Daniel
-Brunthaler** (Projektleitung & Entwicklung), Kayathiri Raveendran, Okan
-Baykal, Sven Schlickewei. Abschlusspräsentation **16.07.2026**. Demo:
+Brunthaler** (Projektleitung & Entwicklung), Tamara Bezrodnow
+(Anforderungen & Use Cases), Kayathiri Raveendran (Qualitätssicherung),
+Okan Baykal (Präsentation & Compliance), Sven Schlickewei
+(Post-Produktion). Abschlusspräsentation **16.07.2026**. Demo:
 <https://fom.ollornog.de/>. Repo: <https://github.com/Ollornog/AnwendungsentwicklungFOM>.
 
 Charakter: **Prototyp mit Mock-Daten**, kein Produktivsystem, keine
@@ -68,11 +70,17 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
 | [`docs/data-model.md`](./docs/data-model.md) | ERD, Tabellen, Migrationen |
 | [`docs/api-contract.md`](./docs/api-contract.md) | Endpoint-Übersicht, Kern-Beispiele |
 | [`docs/pricing-strategies.md`](./docs/pricing-strategies.md) | Fixpreis + Formel im Detail |
-| [`docs/use-cases.md`](./docs/use-cases.md) | Sechs Use Cases |
+| [`docs/use-cases.md`](./docs/use-cases.md) | Use Cases UC-1–UC-16 (10 primär + 6 sekundär), inkl. Use-Case-Diagramm |
 | [`docs/compliance.md`](./docs/compliance.md) | DSGVO, AI Act, UWG/PAngV – knapp |
 | [`docs/security.md`](./docs/security.md) | TOMs-Tabelle Prototyp vs. Produktiv |
-| [`docs/requirements.md`](./docs/requirements.md) | Anforderungs-Dokument |
+| [`docs/requirements.md`](./docs/requirements.md) | Anforderungs-Dokument (44 FR + 23 NFR + 22 REG + 12 MOD) |
+| [`docs/glossar.md`](./docs/glossar.md) | Fachbegriffe (einheitliche Terminologie) |
 | `docs/decisions/` | ADRs 0001–0006 |
+| `docs/testing.md`, `test-matrix.md`, `test-report.md`, `bug-log.md`, `user-tests.md` | QS: Testkonzept, Matrix (26 TC), Report, Bug-Log, externe User-Tests |
+| `docs/video-script.md`, `demo-script.md`, `qa-vorbereitung.md` | Präsentation: Drehbuch, Demo-Ablauf, Q&A-Vorbereitung |
+| [`docs/compliance-review.md`](./docs/compliance-review.md) | Compliance-Review gegen die REG-Anforderungen |
+| [`docs/contributions.md`](./docs/contributions.md) | Wer-hat-was-Übersicht (Rollen-Folie, Q&A) |
+| `docs/media/` | Diagramme (Use-Case-Diagramm als Mermaid) |
 
 ## 5. Abdeckung Modulanforderungen
 
@@ -83,7 +91,7 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
 | REST-API-Design | [`docs/api-contract.md`](./docs/api-contract.md) |
 | Datenschutz & Rechtliches | [`docs/compliance.md`](./docs/compliance.md), öffentliche Seite `/pages/legal.html` |
 | Informationssicherheit | [`docs/security.md`](./docs/security.md), interne Seite `/pages/compliance.html` |
-| Datenbankgestützte Anwendung | PostgreSQL + Alembic-Migrationen `0001–0007` |
+| Datenbankgestützte Anwendung | PostgreSQL + Alembic-Migrationen `0001–0008` |
 | KI-Integration | Gemini-Client in `app/llm.py`, Strategien in `app/strategies/`, ADR [0002](./docs/decisions/0002-llm-provider.md) |
 
 ## 6. Änderungshistorie
@@ -152,13 +160,25 @@ Endkundendaten, keine Shop-Anbindung, keine echten Preisentscheidungen.
   Tausendertrenner und werden entfernt; ein oder zwei Ziffern rechts
   vom letzten Trenner werden als Dezimaltrenner gewertet. Behebt, dass
   „1.000" als 1 € interpretiert wurde.
+- 2026-06-17 – Konsistenz- und Vollständigkeitsdurchlauf vor Abgabe:
+  KI-Badge-ADR-Referenzen auf **0006** korrigiert (vorher fälschlich
+  0004) in `compliance-review.md`, `test-report.md`, `qa-vorbereitung.md`;
+  Test-Doku vereinheitlicht (26 Testfälle, KI-Badge-Regressionstest
+  **TC-LLM-01** statt fehlschlagendem `TC-23`); fehlende Artefakte
+  `docs/user-tests.md`, `docs/demo-script.md` und
+  `docs/media/use-cases.mmd` ergänzt; Sprecher-Zuordnung im Video
+  (Kayathiri Block 3a, Sven Block 5d) in `video-script.md` und
+  `contributions.md` an das finale Skript angeglichen; Tamara als
+  fünftes Teammitglied in `README.md`/`CLAUDE.md` aufgenommen;
+  Post-Produktion: Audio bewusst **nicht** auf eine einheitliche
+  Lautheit normalisiert (offener Punkt statt erledigter Schritt).
 
 ## 7. Offene Punkte
 
 - [ ] Kostenrahmen Gemini (Free-Tier-Grenzen) beobachten, ADR 0002
       ggf. nachziehen.
-- [ ] `docs/contributions.md` und `docs/demo-script.md` vor der
-      Präsentation befüllen.
+- [x] `docs/contributions.md`, `docs/demo-script.md` und
+      `docs/user-tests.md` erstellt (2026-06-17).
 - [ ] HSTS aktivieren, sobald HTTPS dauerhaft läuft (siehe
       `docs/security.md`).
 - [ ] Produktiv-Ausblick dokumentieren: DSFA-Langfassung, AVV mit

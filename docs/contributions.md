@@ -36,7 +36,7 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 - `docs/data-model.md`
 - `docs/api-contract.md`
 - `docs/pricing-strategies.md`
-- `docs/decisions/0001-tech-stack.md` bis `0005-deployment-debian.md`
+- `docs/decisions/0001-tech-stack.md` bis `0006-llm-history-badge.md`
 
 **Projektleitung**
 - Kommunikation mit Prof. Kurik (Anmeldung, Terminbestätigung)
@@ -46,11 +46,11 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 
 **Präsentation**
 - Demo-Screen-Recording für das Präsentationsvideo
-- Voiceover für Architektur-Block und Demo-Abschnitte zu Formel-Strategie und Simulator
+- Voiceover für Architektur-Block und Demo-Abschnitt zur Formel-Strategie
 
 **Quantitativ**
-- ~44 Commits, ~90 % Code-Anteil
-- 5 ADRs verantwortet
+- über 50 Commits, ~90 % Code-Anteil (alleiniger Entwickler)
+- 6 ADRs verantwortet
 
 ---
 
@@ -60,7 +60,7 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 - `docs/requirements.md` (44 FR + 23 NFR + 22 REG + 12 MOD = 101 Anforderungen mit Status, Story Points, Erhebungszeitpunkt T0–T4)
 - `docs/use-cases.md` (6 Hauptflüsse im Format Akteur/Ziel/Vorbedingung/Ablauf/Nachbedingung, gegen Code verifiziert)
 - `docs/glossar.md` (zentrale Fachbegriffe)
-- `docs/media/use-cases.mmd` + `use-cases.svg` (Use-Case-Diagramm in Mermaid)
+- `docs/media/use-cases.mmd` (Use-Case-Diagramm als Mermaid-Code, eingebettet in `use-cases.md`)
 
 **Regulatorik**
 - Regulatorischen Block als eigenständigen Anforderungstyp REG-01 bis REG-22 ins Projekt getragen
@@ -89,7 +89,7 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 - Re-Test nach BUG-001-Fix, Aufnahme von TC-LLM-01 in die Test-Matrix
 
 **Präsentation**
-- Voiceover für Demo-Abschnitt „Preisgraph + Historie"
+- Voiceover für Block „Problem & Idee" (Teil 3a) und Demo-Abschnitt „Preisgraph + Historie"
 - Rollen-Slot
 
 ---
@@ -118,9 +118,10 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 
 **Video**
 - Schnitt des Präsentationsvideos in DaVinci Resolve
-- Audio-Normalisierung auf -16 LUFS, Kompressor, EQ
+- Bild- und Formatangleichung über Aufnahmen aus fünf Quellgeräten (Skalierung, Bildausschnitt, Helligkeit)
 - Titelkarten im FOM-Farbcode, schlichter Schnittstil
-- Zeitdisziplin auf exakt 10 Minuten
+- Zeitdisziplin innerhalb der 10-Minuten-Grenze
+- Offener Punkt: Audio bewusst nicht auf eine einheitliche Lautheit (LUFS) normalisiert – siehe `test-report.md`/Reflexion
 
 **Dokumentation**
 - `docs/contributions.md` (diese Datei)
@@ -128,7 +129,7 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 - Redaktionelles Lektorat der Doku-Dateien im Repo (einheitliche Terminologie, Schreibweise)
 
 **Präsentation**
-- Voiceover für Fazit-Block
+- Voiceover für Demo-Abschnitt „Simulator-Dynamik" und Fazit-Block
 - Rollen-Slot
 
 ---
@@ -152,10 +153,10 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 |-------|----------------|
 | `README.md`, `CLAUDE.md` | Daniel |
 | `docs/architecture.md`, `data-model.md`, `api-contract.md`, `pricing-strategies.md` | Daniel |
-| `docs/decisions/*` (ADRs 0001–0005) | Daniel |
+| `docs/decisions/*` (ADRs 0001–0006) | Daniel |
 | `docs/compliance.md`, `docs/security.md` | Daniel (Grundlage) / Tamara (Regulatorik) |
 | `docs/requirements.md`, `use-cases.md`, `glossar.md` | Tamara |
-| `docs/media/use-cases.*` | Tamara |
+| `docs/media/use-cases.mmd` | Tamara |
 | `docs/testing.md`, `test-matrix.md`, `user-tests.md`, `bug-log.md`, `test-report.md` | Kayathiri |
 | `docs/video-script.md`, `compliance-review.md`, `qa-vorbereitung.md` | Okan |
 | `docs/contributions.md`, PDF-Konsolidierung | Sven |
@@ -165,12 +166,12 @@ Diese Datei dokumentiert, wer welchen Beitrag zum Projekt geleistet hat. Sie die
 | Block im Video | Sprecher:in |
 |----------------|-------------|
 | Hook | Okan |
-| Problem & Idee | Tamara |
+| Problem & Idee (3a / 3b) | Kayathiri + Tamara |
 | Architektur-Überblick | Daniel |
 | Demo – Produkt anlegen + Fixpreis | Tamara |
 | Demo – Formel-Strategie | Daniel |
 | Demo – KI-Vorschlag + Transparenz | Okan |
-| Demo – Simulator-Dynamik | Daniel |
+| Demo – Simulator-Dynamik | Sven |
 | Demo – Preisgraph + Historie | Kayathiri |
 | Rollenverteilung | alle fünf |
 | Fazit | Sven |

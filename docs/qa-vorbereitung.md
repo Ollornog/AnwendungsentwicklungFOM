@@ -135,7 +135,7 @@
 
 * Nur wenn gespeicherter Wert unverändert aus der KI-Antwort stammt  
 * Sobald der Nutzer editiert, fällt das Badge weg  
-* Dokumentiert in ADR 0004, löst BUG-001
+* Dokumentiert in ADR 0006, löst BUG-001
 
 **3.5 Wie verhindert ihr unsinnige KI-Preise?** *(Daniel)*
 
@@ -167,7 +167,7 @@
 
 **4.4 Eure Use Cases?** *(Tamara)*
 
-* Sechs Hauptflüsse: Produkt anlegen, Strategie zuweisen, Preis berechnen, KI-Vorschlag, Simulator, Historie  
+* Zehn primäre Use Cases (UC-1–UC-10); im Video auf sechs Kernflüsse fokussiert: Produkt anlegen, Strategie zuweisen, Preis berechnen, KI-Vorschlag, Simulator, Historie  
 * Format: Akteur / Ziel / Vorbedingung / Ablauf / Nachbedingung  
 * Use-Case-Diagramm zeigt zusätzlich Admin-Flows und Gemini-Anbindung
 
@@ -270,14 +270,14 @@
 **7.2 Wie wurde das Video produziert?** *(Sven)*
 
 * Einzelaufnahmen separat zu Hause \+ Demo-Screen-Recording  
-* Schnitt in DaVinci Resolve, Audio auf \-16 LUFS normalisiert  
+* Schnitt in DaVinci Resolve, Bild- und Formatangleichung über fünf Quellgeräte  
 * Titelkarten im FOM-Farbcode, bewusst schlichter Schnittstil
 
 **7.3 Herausforderung Post-Produktion?** *(Sven)*
 
-* Audio-Angleichung über fünf Mikrofone, fünf Räume, fünf Lautstärken  
-* Nur mit Kompressor, EQ und einheitlicher LUFS-Marke sauber zu lösen  
-* Während des Projekts neu erlernt
+* Bild aus fünf Geräten vereinheitlichen: Auflösung, Seitenverhältnis, Bildausschnitt, Helligkeit  
+* Schnitt sauber in die 10-Minuten-Grenze bringen, ohne Inhalt zu verlieren  
+* Audio bewusst nicht auf eine einheitliche Lautheit normalisiert – offener Punkt (siehe 8.2)
 
 **7.4 Konsolidierung der schriftlichen Abgabe?** *(Sven)*
 
@@ -294,7 +294,7 @@
 * **Tamara:** Regulatorische Tiefe bei AI Act, DSGVO, PAngV  
 * **Kayathiri:** Richtige Testtiefe zwischen „Prototyp" und „prüfungsfest"  
 * **Okan:** Koordination der Einzelaufnahmen  
-* **Sven:** Audio-Angleichung über unterschiedliche Aufnahmesituationen
+* **Sven:** Bild-/Formatvereinheitlichung über fünf Quellgeräte und Zeitschnitt in die 10-Minuten-Grenze
 
 **8.2 Was würdet ihr anders machen?**
 
@@ -302,7 +302,7 @@
 * **Tamara:** Früher einsteigen, Regulatorik vor dem Sprint klären  
 * **Kayathiri:** Testing früher starten, zwei User-Test-Runden statt einer  
 * **Okan:** Aufnahme-Guidelines vorab schriftlich festlegen  
-* **Sven:** Rohschnitt mit Platzhalter-Audio früh machen
+* **Sven:** Aufnahme-Guidelines vorab festlegen; Audio nachträglich auf eine einheitliche Lautheit (LUFS) normalisieren
 
 **8.3 Mit dieser Gruppe wieder arbeiten?** *(Okan, alle nicken)*
 
@@ -316,7 +316,7 @@
 * **Tamara:** Mermaid für diff-bare Diagramme im Repo  
 * **Kayathiri:** Think-aloud-Tests als Methode  
 * **Okan:** Vertieftes Verständnis von AI Act, DSGVO, PAngV  
-* **Sven:** Audio-Post-Produktion mit LUFS-Normalisierung
+* **Sven:** Multi-Source-Schnitt in DaVinci Resolve und redaktionelle Konsolidierung heterogener Texte
 
 ---
 

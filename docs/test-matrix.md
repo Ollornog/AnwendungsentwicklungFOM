@@ -47,7 +47,7 @@ Automatische Testabdeckung ist mit *pytest* in der Bemerkungs-Spalte markiert. A
 | TC-20 | Wettbewerbspreis-Batch öffnen | Modal lädt, KI-Vorschlag mit alt/neu/Delta pro Produkt | ✅ |  |
 | TC-21 | Einzelnen Wettbewerbspreis übernehmen | Nur das eine Produkt wird aktualisiert, andere bleiben unverändert | ✅ |  |
 | TC-22 | Historie eines fremden Produkts anrufen | 404 | ✅ | pytest `test_ownership_protects_price_endpoints` |
-| TC-23 | Historie zeigt KI-Badge korrekt bei `is_llm_suggestion=true` | Badge „KI-Vorschlag" sichtbar für betroffene Einträge | ⛔ |  |
+| TC-LLM-01 | Historie zeigt KI-Badge korrekt bei `is_llm_suggestion=true` (Regressionstest zu BUG-001) | Badge „KI-Vorschlag" sichtbar für betroffene Einträge | ✅ | Nach BUG-001-Fix manuell verifiziert; Gegenprobe: editierter Vorschlag → kein Badge |
 
 ## **E. Sicherheit und Auth (bereichsübergreifend)**
 

@@ -6,8 +6,8 @@ Die automatisierten pytest-Tests im Backend liegen in Daniels Verantwortung und 
 
 | Kennzahl | Wert |
 | :---- | :---- |
-| Testfälle in Test-Matrix | 23 |
-| davon bestanden (✅) | 23 |
+| Testfälle in Test-Matrix | 26 |
+| davon bestanden (✅) | 26 |
 | davon fehlgeschlagen (⛔) | 0 |
 | Externe User-Tests durchgeführt | 3 |
 | Bugs aus QS-Phase gemeldet | 0 |
@@ -26,19 +26,18 @@ Die Usability-Findings aus den externen User-Tests wurden soweit umgesetzt, wie 
 
 ## **Test-Matrix – Ergebnisse**
 
-Die Test-Matrix umfasst 23 manuelle Testfälle, verteilt über die sechs Use Cases. Für jeden Use Case wurde mindestens ein Happy-Path-Fall und ein Fehlerfall geprüft.
+Die Test-Matrix umfasst 26 manuelle Testfälle, verteilt über die zehn primären Use Cases und gruppiert in fünf Themenbereiche. Für jeden Use Case wurde mindestens ein Happy-Path-Fall und ein Fehlerfall geprüft.
 
-### Abdeckung nach Use Case
+### Abdeckung nach Themenbereich
 
-| Use Case | Testfälle | Bestanden | Fehlgeschlagen |
-| :---- | ----: | ----: | ----: |
-| UC-1 Produkt anlegen | 4 | 4 | 0 |
-| UC-2 Strategie zuweisen | 4 | 4 | 0 |
-| UC-3 Preis berechnen | 3 | 3 | 0 |
-| UC-4 KI-Vorschlag einholen | 4 | 4 | 0 |
-| UC-5 Simulator nutzen | 4 | 4 | 0 |
-| UC-6 Historie einsehen | 4 | 4 | 0 |
-| **Summe** | **23** | **23** | **0** |
+| Themenbereich (Test-Matrix) | Use Cases | Testfälle | Bestanden | Fehlgeschlagen |
+| :---- | :---- | ----: | ----: | ----: |
+| A. Produkt-Management | UC-1 bis UC-3 | 6 | 6 | 0 |
+| B. Preisstrategien (manuell + KI) | UC-4, UC-5 | 7 | 7 | 0 |
+| C. Preisberechnung, Simulator, Graph | UC-6 bis UC-8 | 6 | 6 | 0 |
+| D. KI-Wettbewerbspreis und Historie | UC-9, UC-10 | 4 | 4 | 0 |
+| E. Sicherheit und Auth | übergreifend | 3 | 3 | 0 |
+| **Summe** |  | **26** | **26** | **0** |
 
 ### 
 
@@ -99,7 +98,7 @@ Jede:r hat die sechs vorgegebenen Aufgaben durchlaufen (Anmelden, Produkt anlege
 | Bugs aus externen User-Tests | 0 |
 | Offene Bugs zum Berichtszeitpunkt | 0 |
 
-BUG-001 (fehlende KI-Markierung in der Preishistorie) entstand aus dem Co-Testing während Daniels Entwicklungssprint, also vor Beginn der strukturierten QS-Phase. Der Fix ist in ADR 0004 dokumentiert und wurde von mir nachgetestet. Der zugehörige Testfall TC-LLM-01 wurde in die Test-Matrix aufgenommen, um Regressionen vorzubeugen.
+BUG-001 (fehlende KI-Markierung in der Preishistorie) entstand aus dem Co-Testing während Daniels Entwicklungssprint, also vor Beginn der strukturierten QS-Phase. Der Fix ist in ADR 0006 dokumentiert und wurde von mir nachgetestet. Der zugehörige Testfall TC-LLM-01 wurde in die Test-Matrix aufgenommen, um Regressionen vorzubeugen.
 
 Die QS-Phase selbst hat keine neuen Bugs hervorgebracht. Die Prüfung hat aber zwei Usability-Findings gebracht, die als Verbesserungen umgesetzt wurden, und ein drittes, das bewusst nicht adressiert wird.
 
