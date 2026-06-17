@@ -8,8 +8,8 @@ landet in einer append-only Preis-Historie.
 
 Studienprojekt im Modul *Projekt Anwendungsentwicklung*, FOM Hochschule
 (B.Sc. Wirtschaftsinformatik), Lehrender Johannes Kurik, Team Daniel
-Brunthaler (Projektleitung), Kayathiri Raveendran, Okan Baykal, Sven
-Schlickewei. Abschlusspräsentation 16.07.2026. Details zum Auftrag in
+Brunthaler (Projektleitung), Tamara Bezrodnow, Kayathiri Raveendran,
+Okan Baykal, Sven Schlickewei. Abschlusspräsentation 16.07.2026. Details zum Auftrag in
 [`docs/requirements.md`](./docs/requirements.md).
 
 ## Demo
@@ -75,7 +75,7 @@ Swagger-UI unter `http://localhost:8000/docs`.
 │   │   ├── strategies/     Pricing-Strategien + AST-Evaluator
 │   │   ├── services/       app_settings, seeding
 │   │   └── main.py
-│   ├── alembic/versions/   Migrationen 0001–0007
+│   ├── alembic/versions/   Migrationen 0001–0008
 │   ├── seed.py             CLI-Seed (Admin + Mock-Produkte)
 │   └── tests/              pytest
 ├── frontend/               Statisches Frontend (von FastAPI ausgeliefert)

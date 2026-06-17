@@ -2,7 +2,40 @@
 
 Vollständige Liste der Benutzerabläufe aus Sicht der Shop-Betreibenden. Die Anwendung kennt **zwei Preisstrategien** (Fixpreis, Formel); die KI ist ein Werkzeug, das den Nutzer beim Befüllen dieser Strategien sowie bei der Wettbewerbspreis-Schätzung unterstützt – keine eigenständige Strategie.
 
-Ausnahmen sind knapp gehalten; der vollständige Bedienablauf steht in der UI. Eine Übersichtsgrafik mit allen Akteuren und Use Cases liegt unter `docs/media/use-case-diagram.png`.
+Ausnahmen sind knapp gehalten; der vollständige Bedienablauf steht in der UI. Das folgende Use-Case-Diagramm gibt den Überblick über Akteure und Use Cases (Quelle als Mermaid-Code: [`docs/media/use-cases.mmd`](./media/use-cases.mmd)):
+
+```mermaid
+flowchart LR
+  team(["Team-Benutzer"])
+  admin(["Admin"])
+  gemini["Gemini API (externer Dienst)"]
+
+  subgraph SYS["KI-gestuetzte Preisoptimierung (System)"]
+    direction TB
+    uc1(["UC-1 Produkt anlegen"])
+    uc2(["UC-2 Produkt bearbeiten"])
+    uc3(["UC-3 Produkt loeschen"])
+    uc4(["UC-4 Strategie festlegen (Fix/Formel)"])
+    uc5(["UC-5 Strategie per KI vorschlagen"])
+    uc6(["UC-6 Preis berechnen und auditieren"])
+    uc7(["UC-7 Simulator nutzen"])
+    uc8(["UC-8 Preisgraph analysieren"])
+    uc9(["UC-9 Wettbewerbspreise per KI (Batch)"])
+    uc10(["UC-10 Preishistorie einsehen"])
+    uc11(["UC-11 Benutzer verwalten"])
+    uc12(["UC-12 Eigenes Passwort aendern"])
+    uc13(["UC-13 Gemini-API-Key setzen"])
+    uc14(["UC-14 Rate Limit konfigurieren"])
+    uc15(["UC-15 HTTPS aktivieren"])
+    uc16(["UC-16 DB auf Seed zuruecksetzen"])
+  end
+
+  team --> uc1 & uc2 & uc3 & uc4 & uc5 & uc6 & uc7 & uc8 & uc9 & uc10 & uc12 & uc16
+  admin --> uc11 & uc13 & uc14 & uc15
+  admin -. "erbt alle Team-Flows" .-> team
+  uc5 --> gemini
+  uc9 --> gemini
+```
 
 ## Akteure
 
@@ -227,9 +260,9 @@ Nicht Kern der Präsentations-Demo, aber funktional vorhanden und relevant für 
 
 ## UC-13: Gemini-API-Key setzen (Admin-only)
 
-**Akteur:** Jeder eingeloggte Nutzer.
+**Akteur:** `admin`-Account.
 **Ziel:** Den per UI hinterlegten LLM-Key setzen oder entfernen.
-**Vorbedingung:** Authentifiziert.
+**Vorbedingung:** Als `admin` eingeloggt.
 
 **Ablauf:**
 1. *Einstellungen* → Abschnitt *Google Gemini API-Key*.

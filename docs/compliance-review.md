@@ -34,7 +34,7 @@ Das Review wurde in zwei Durchläufen durchgeführt:
 
 | Bereich | 🟢 | 🟡 | 🔴 | ⚪ |
 | :---- | :---: | :---: | :---: | :---: |
-| DSGVO | 11 | 0 | 0 | 0 |
+| DSGVO | 12 | 0 | 0 | 0 |
 | EU AI Act | 4 | 0 | 0 | 1 |
 | NIS-2 | 1 | 0 | 0 | 0 |
 | Preisrecht | 3 | 0 | 0 | 2 |
@@ -62,7 +62,7 @@ Vertragserfüllung als Grundlage in `compliance.html` mit Klarstellung, dass der
 
 ### REG-04 – Rechenschaftspflicht / Audit-Trail (Art. 5 Abs. 2\) 🟢
 
-Append-only Preishistorie mit Zeitstempel, Strategie, Input und KI-Badge. Semantik des KI-Badges in ADR 0004 und BUG-001 dokumentiert.
+Append-only Preishistorie mit Zeitstempel, Strategie, Input und KI-Badge. Semantik des KI-Badges in ADR 0006 und BUG-001 dokumentiert.
 
 ### REG-05 – Informationspflichten (Art. 13\) 🟢
 
@@ -114,7 +114,7 @@ Korrekte Einstufung: Kein Hochrisiko, kein verbotenes System, begrenztes Risiko 
 
 ### REG-14 – Transparenzpflicht (Art. 50, ab 2\. 8\. 2026\) 🟢
 
-KI-Interaktion als solche gekennzeichnet: Prompt-Preview im Strategie-Modal, KI-Badge in der Historie (ADR 0004), expliziter Transparenzhinweis in `legal.html`.
+KI-Interaktion als solche gekennzeichnet: Prompt-Preview im Strategie-Modal, KI-Badge in der Historie (ADR 0006), expliziter Transparenzhinweis in `legal.html`.
 
 ### REG-15 – Menschliche Aufsicht 🟢
 
