@@ -1,4 +1,4 @@
-# **Externe User-Tests**
+# **Manuelle User-Tests**
 
 Dokumentation der drei externen Usability-Tests mit Think-aloud-Protokoll.
 Ergänzt die funktionale [`test-matrix.md`](./test-matrix.md) um die
@@ -6,120 +6,205 @@ Perspektive, die reine Funktionstests nicht erreichen: Verständlichkeit,
 Bedienbarkeit und Vertrauen. Die konsolidierte Bilanz steht zusätzlich in
 [`test-report.md`](./test-report.md).
 
-## **1. Ziel und Methodik**
+## **1. Zielsetzung**
 
-- **Ziel:** Verständnis- und Bedienprobleme finden, die dem Team durch
-  Betriebsblindheit nicht mehr auffallen.
-- **Methode:** Think-aloud-Protokoll – die Testperson spricht laut aus,
-  was sie sieht, denkt und erwartet. Die Beobachterin (Kayathiri) greift
-  nicht ein und notiert Stolperstellen möglichst wörtlich.
-- **Dauer:** 20–30 Minuten pro Test, einzeln.
-- **Umgebung:** Live-Demo unter <https://fom.ollornog.de/>. Vor jeder
-  Session wird die Datenbank über *Einstellungen → Datenbank zurücksetzen*
-  (UC-16) auf den Seed-Stand gebracht, damit alle Tester:innen die gleichen
-  Startbedingungen haben.
-- **Keine Einführung:** Die Tester:innen bekommen nur die Aufgabenliste,
-  keine Erklärung der Oberfläche.
+Drei Personen außerhalb des Teams bedienen den Prototyp ohne vorherige Erklärung. Ziel ist es, **Usability-Probleme** und **Verständnislücken** zu finden, die dem Team durch Betriebsblindheit entgehen. Kein Funktionstest – dafür ist `docs/test-matrix.md` zuständig.
 
-## **2. Testpersonen**
+## **2. Vorgehen**
 
-Bewusst unterschiedliche Profile, um ein breites Bild zu bekommen.
+- Testperson erhält nur: URL, Demo-Login (`Demo` / `DemoUser`), ein Satz Kontext („Tool zur Preisoptimierung im E-Commerce, du bist Shop-Betreiber:in").
+- Keine Schulung, keine Demo-Vorführung.
+- Think-aloud-Protokoll: die Testperson kommentiert laut, was sie sieht und denkt.
+- Beobachter:in (Kayathiri) notiert Stolperstellen, hakt nicht nach, greift nur ein, wenn die Person völlig festhängt.
+- Dauer pro Test: ca. 20–30 Minuten.
+- Vor jeder Session wird die DB über *Einstellungen → Datenbank zurücksetzen* (UC-16) auf den Seed-Stand gebracht.
+- Am Ende: kurze Kernfragen (siehe 4.).
 
-| ID | Profil | Bezug zu E-Commerce | IT-Affinität |
+## **3. Aufgaben für die Testpersonen**
+
+Die Testpersonen bekommen die folgenden **sechs** Aufgaben in dieser Reihenfolge. Kein Zeitlimit, aber Abbruch erlaubt.
+
+1. **Anmelden** an der Anwendung.
+2. **Ein neues Produkt anlegen** – frei wählbare Werte, inklusive Kontext-Text.
+3. **Eine Fixpreis-Strategie** zuweisen und speichern.
+4. **Eine Formel-Strategie** für ein bestehendes Produkt einrichten, die lager- oder uhrzeitabhängig reagiert.
+5. **Einen KI-Vorschlag einholen** für ein Produkt und entscheiden, ob übernommen wird.
+6. **Die Preishistorie** eines Produkts öffnen und erklären, was dort zu sehen ist.
+
+## **4. Kernfragen am Ende**
+
+- Was war intuitiv, was nicht?
+- Wo warst du unsicher, was das System gerade macht?
+- An welcher Stelle hättest du eine Erklärung, einen Tooltip oder ein Beispiel erwartet?
+- Hast du dem KI-Vorschlag vertraut? Warum (nicht)?
+- Würdest du das Tool in einem echten Shop einsetzen?
+
+## **5. Testpersonen**
+
+| ID | Rolle / Kontext | Erfahrung E-Commerce | Erfahrung mit KI-Tools | Datum |
+| :---- | :---- | :---- | :---- | :---- |
+| UT-01 | *Controller, kein IT-Background* | mittel | gering | 15.05.2026 |
+| UT-02 | *IT-affine Person (Kollegin), kein Shop-Kontext* | gering | hoch | 16.05.2026 |
+| UT-03 | *Person mit Shop-Erfahrung (vertreibt Herrenschmuck)* | hoch | mittel | 17.05.2026 |
+
+Namen der Testpersonen werden nicht dokumentiert (DSGVO – Datenminimierung). IDs reichen für die Zuordnung der Findings.
+
+---
+
+## **6. Test UT-01**
+
+**Datum:** 15.05.2026 **Testperson:** UT-01 (Controller, kein IT-Background) **Setting:** Remote, Windows 11, Chrome
+
+### Ablauf und Beobachtungen
+
+| Aufgabe | Erfolgreich? | Dauer | Beobachtung |
 | :---- | :---- | :---- | :---- |
-| UT-01 | Person ohne IT-Hintergrund | gering | niedrig |
-| UT-02 | IT-affine Person ohne E-Commerce-Kontext | gering | hoch |
-| UT-03 | Person mit eigenem Webshop | hoch | mittel |
+| 1. Anmelden | Ja | 1 min | Login sofort verstanden |
+| 2. Produkt anlegen | Ja | 3 min | Kontext-Feld wurde ignoriert |
+| 3. Fixpreis zuweisen | Ja | 2 min | *Preis*-Button schnell gefunden |
+| 4. Formel einrichten | Nein | 6 min | Bedeutung der Variablen nicht verstanden |
+| 5. KI-Vorschlag einholen | Ja | 4 min | Vorschlag wurde ungeprüft übernommen |
+| 6. Historie öffnen | Ja | 2 min | Historie geöffnet, aber Inhalt nicht eingeordnet |
 
-## **3. Aufgaben**
+### Findings
 
-Jede:r durchläuft dieselben sechs Aufgaben (die Kernflüsse der Anwendung):
+| \# | Finding | Kategorie | Priorität | In Bug-Log? |
+| :---- | :---- | :---- | :---- | :---- |
+| → F2 | Zweck des Kontext-Felds unklar | Verständlichkeit | Mittel | nein (kein Bug) |
+| → F1 | Formelvariablen (`demand`, `stock`) nicht selbsterklärend; Aufgabe 4 abgebrochen | Usability | Hoch | nein (kein Bug) |
+| → F4 | KI-Vorschlag ohne Prüfung übernommen; Begründung/KI-Badge nicht aktiv beachtet | Verständlichkeit | Niedrig | nein (kein Bug) |
 
-1. Anmelden.
-2. Ein Produkt anlegen.
-3. Dem Produkt einen **Fixpreis** zuweisen.
-4. Eine **Formel**-Strategie einrichten.
-5. Einen **KI-Vorschlag** einholen und ansehen.
-6. Die **Preishistorie** des Produkts öffnen.
+### Zitate (Think-aloud)
 
-Alle drei Testpersonen haben alle sechs Aufgaben abgeschlossen – teils mit
-Nachfragen und Umwegen, aber ohne Eingriff durch die Beobachterin.
+„Ich weiß nicht, was ich in das Kontext-Feld schreiben soll."
 
-## **4. Beobachtungen pro Testperson (Auszug Think-aloud)**
+„Woher soll ich wissen, was demand oder stock bedeutet?"
 
-### UT-01 – ohne IT-Hintergrund
+### Antworten auf Kernfragen
 
-- Produkt anlegen gelang flüssig; das Feld **Kontext** löste eine Pause aus:
-  *„Was soll ich da reinschreiben? Sieht das ein Kunde?"* → Finding **F2**.
-- Fixpreis war sofort klar.
-- Bei der Formel zögerte die Person stark: *„`cost_price`, was ist das –
-  muss ich da Englisch programmieren?"* → Finding **F1**. Mit den
-  Token-Buttons kam sie dann zum Ziel.
-- Den **Preisgraph** öffnete sie freiwillig und kommentierte: *„Ah, jetzt
-  sehe ich, was die Formel macht."* (positiv).
+- **Intuitiv:** Produkt anlegen und Fixpreis setzen.
+- **Unsicherheiten:** Formel-Editor.
+- **Fehlende Erklärungen:** Variablen im Formelmodus.
+- **Vertrauen in KI:** Mittel – Begründung hilft.
+- **Einsatzbereitschaft:** Ja, nach kurzer Schulung.
 
-### UT-02 – IT-affin, ohne E-Commerce
+---
 
-- Formel-Syntax war für diese Person kein Problem.
-- Stolperte ebenfalls am **Kontext**-Feld (Zweck unklar) → **F2**.
-- Testete die Anwendung am Smartphone und bemängelte die **mobile
-  Bedienung** von Slidern und Formel-Editor → Finding **F3**.
-- Lobte ausdrücklich die **Prompt-Preview**: *„Gut, dass ich sehe, was an
-  die KI rausgeht, bevor ich klicke."* (positiv).
+## **7. Test UT-02**
 
-### UT-03 – mit eigenem Webshop
+**Datum:** 16.05.2026 **Testperson:** UT-02 (IT-affine Kollegin) **Setting:** Remote, macOS, Safari
 
-- Ging die Aufgaben routiniert durch, dachte in echten Szenarien
-  (Feierabend-Aufschlag, Lagerräumung).
-- Formelvariablen wirkten zunächst technisch → **F1**; mit dem
-  **Fancy-Formel-Button** war die Person zufrieden.
-- Beim KI-Vorschlag: *„Die Formel würde ich nochmal selbst prüfen, bevor
-  ich sie scharf schalte."* – deckt sich mit dem Human-in-the-Loop-Design.
-- Verstand das **KI-Badge** in der Historie sofort.
+### Ablauf und Beobachtungen
 
-## **5. Konsolidierte Findings**
+| Aufgabe | Erfolgreich? | Dauer | Beobachtung |
+| :---- | :---- | :---- | :---- |
+| 1. Anmelden | Ja | <1 min | Keine Probleme |
+| 2. Produkt anlegen | Ja | 2 min | Schnell abgeschlossen |
+| 3. Fixpreis zuweisen | Ja | 1 min | Sofort verstanden |
+| 4. Formel einrichten | Ja | 3 min | Suchte zuerst nach Vorlagen |
+| 5. KI-Vorschlag einholen | Ja | 2 min | Editierte den Vorschlag direkt |
+| 6. Historie öffnen | Ja | 1 min | Historie verständlich |
 
-| \# | Finding | UT-01 | UT-02 | UT-03 | Kategorie | Priorität | Entscheidung |
-| :---- | :---- | :---: | :---: | :---: | :---- | :---- | :---- |
-| F1 | Formel-Syntax für Nicht-Programmierer:innen schwer zugänglich – Variablennamen wie `cost_price` wirken technisch | ✓ |  | ✓ | Usability | Mittel | **Fix** – Token-Buttons im Formel-Editor sichtbar gemacht, Fancy-Formel-Button ergänzt |
-| F2 | Kontext-Feld beim Produkt unklar – Testpersonen wussten nicht, wofür der Freitext verwendet wird | ✓ | ✓ |  | Verständlichkeit | Mittel | **Fix** – Beschriftung präzisiert, Hinweis ergänzt, dass der Text an die KI übergeben wird |
-| F3 | Mobile-Ansicht schlecht bedienbar – Slider und Formel-Editor funktionieren auf kleinen Bildschirmen nicht sauber |  | ✓ |  | Usability | Niedrig | **Wontfix** – Mobile-Layout out-of-scope laut `requirements.md` FR-38; Demo-Zielumgebung ist Desktop-Browser |
+### Findings
 
-Keiner der drei Tests hat einen funktionalen **Bug** erzeugt – die Findings
-sind Usability-/Verständnis-Themen. (Der einzige Bug des Projekts, BUG-001,
-stammt aus dem Co-Testing im Nacht-Sprint, nicht aus den User-Tests.)
+| \# | Finding | Kategorie | Priorität | In Bug-Log? |
+| :---- | :---- | :---- | :---- | :---- |
+| → F3 | Beispiel-/Vorlage-Formeln werden erwartet, aber nicht gefunden | Feature-Wunsch | Mittel | nein (kein Bug) |
+| → F4 | Prompt-Vorschau inhaltlich gut, für Laien aber zu technisch | Verständlichkeit | Niedrig | nein (kein Bug) |
 
-## **6. Positive Rückmeldungen (wiederkehrend)**
+### Zitate (Think-aloud)
 
-- Der **Simulator** mit Slidern wirkte auf alle drei greifbar und gut
-  verständlich.
-- Der **Preisgraph** wurde spontan als „der beste Einstieg" bezeichnet,
-  weil er abstrakte Formeln visuell erfahrbar macht.
-- Die **Prompt-Preview** vor dem KI-Aufruf schuf Vertrauen.
-- Die **Historie mit KI-Badge** verstanden alle drei auf den ersten Blick.
+„Ich hätte erwartet, dass es ein paar Beispiel-Formeln gibt."
 
-## **7. Antworten auf die Kernfragen (Tendenzen)**
+„Der Prompt ist interessant, aber für normale Nutzer vielleicht zu technisch."
 
-- **Vertrauen in den KI-Vorschlag:** zwei von drei vertrauten dem Vorschlag
-  nur eingeschränkt („ich würde die Formeln immer nochmal prüfen"). Das
-  bestätigt das Human-in-the-Loop-Design.
-- **Einsatz in einem echten Shop:** zwei von drei würden das Tool als
-  Unterstützung einsetzen, sofern es an einen echten Shop angebunden ist.
-  Eine Testperson war zurückhaltender.
+### Antworten auf Kernfragen
 
-## **8. Abgeleitete Maßnahmen**
+- **Intuitiv:** Gesamte Navigation.
+- **Unsicherheiten:** Keine wesentlichen.
+- **Fehlende Erklärungen:** Formel-Beispiele.
+- **Vertrauen in KI:** Hoch, wegen sichtbarer Prompt-Vorschau.
+- **Einsatzbereitschaft:** Ja.
 
-| Aus Finding | Maßnahme | Status |
-| :---- | :---- | :---- |
-| F1 | Token-Buttons prominent, Fancy-Formel-Button | umgesetzt |
-| F2 | Kontext-Feld neu beschriftet, KI-Hinweis ergänzt | umgesetzt |
-| F3 | Mobile-Optimierung | bewusst nicht umgesetzt (Wontfix, FR-38) |
+---
 
-## **9. Reflexion zur Methode**
+## **8. Test UT-03**
 
-Drei Personen sind für einen Prototyp eine tragfähige Stichprobe: Die
-unterschiedlichen Profile haben an unterschiedlichen Stellen gestolpert
-(UT-01 an der Formel, UT-02 an Mobile, alle am Kontext-Feld) und zusammen
-ein breiteres Bild ergeben als drei ähnliche Tester:innen. Für eine zweite
-Iteration wäre eine weitere Runde nach Umsetzung der Fixes sinnvoll, um die
-Wirkung der Änderungen zu verifizieren.
+**Datum:** 17.05.2026 **Testperson:** UT-03 (Shop-Betreiber Herrenschmuck) **Setting:** Remote, Windows 11, Edge
+
+### Ablauf und Beobachtungen
+
+| Aufgabe | Erfolgreich? | Dauer | Beobachtung |
+| :---- | :---- | :---- | :---- |
+| 1. Anmelden | Ja | <1 min | Keine Probleme |
+| 2. Produkt anlegen | Ja | 2 min | Trug reale Produktdaten ein |
+| 3. Fixpreis zuweisen | Ja | 2 min | Verständlich |
+| 4. Formel einrichten | Ja | 4 min | Verstand Lagerlogik schnell |
+| 5. KI-Vorschlag einholen | Ja | 3 min | Verglich Ergebnis mit eigener Erfahrung |
+| 6. Historie öffnen | Ja | 2 min | Fand Historie sehr sinnvoll, öffnete danach spontan den Preisgraph |
+
+### Findings
+
+| \# | Finding | Kategorie | Priorität | In Bug-Log? |
+| :---- | :---- | :---- | :---- | :---- |
+| → F5 | Historie wird bei vielen Produkten unübersichtlich | Usability | Niedrig | nein (kein Bug) |
+
+Kein funktionaler Defekt. Zusätzlich eine fachliche Einordnung (kein Finding, sondern Bestätigung): Der Wettbewerbspreis ist für diese Person die wichtigste Eingangsgröße – das deckt sich mit der Rolle des Felds in der Formel-Strategie.
+
+### Zitate (Think-aloud)
+
+„Der Wettbewerbspreis ist für mich fast wichtiger als der Einkaufspreis."
+
+„Die Historie ist gut, aber bei vielen Produkten wird sie schnell lang."
+
+### Antworten auf Kernfragen
+
+- **Intuitiv:** Produkt- und Preisverwaltung.
+- **Unsicherheiten:** Keine größeren.
+- **Fehlende Erklärungen:** Keine.
+- **Vertrauen in KI:** Mittel bis hoch.
+- **Einsatzbereitschaft:** Ja, besonders für kleinere Shops.
+
+---
+
+## **9. Konsolidierte Findings**
+
+Zusammenfassung über alle drei Tests, sortiert nach Priorität.
+
+| ID | Finding | UT-01 | UT-02 | UT-03 | Priorität | Entscheidung |
+| :---- | :---- | :---: | :---: | :---: | :---- | :---- |
+| F1 | Formelvariablen (`demand`, `stock`, `cost_price`) nicht selbsterklärend | ✓ | ✓ |  | Hoch | **Fix** – Token-Buttons im Formel-Editor (Variablen per Klick einfügen) plus Hinweiszeile |
+| F2 | Zweck des Kontext-Felds unklar | ✓ |  |  | Mittel | **Fix** – beschreibender Platzhalter mit Beispielinhalten; der KI-Bezug ist über die Prompt-Vorschau einsehbar |
+| F3 | Beispiel-/Vorlage-Formeln fehlen | | ✓ |  | Mittel | **Fix** – Beispiel-Formel als Platzhalter im Eingabefeld plus Fancy-Formel-Button („Ausführlich"), der per KI eine ausdrucksstarke Formel erzeugt |
+| F4 | KI-Vorschlag wird ungeprüft übernommen / Prompt für Laien zu technisch | ✓ | ✓ |  | Niedrig | **By Design** – Prompt-Vorschau, Begründung und KI-Badge adressieren die Transparenz; Human-in-the-Loop bleibt der Schutz |
+| F5 | Historie wird bei vielen Produkten unübersichtlich | | | ✓ | Niedrig | **Wontfix** – Historienfilter außerhalb des Prototyp-Scopes |
+
+### Wiederkehrende Muster
+
+- Produktanlage und Fixpreis wurden von allen Testpersonen problemlos verstanden.
+- Formel-Strategien benötigen mehr Hilfestellung (Variablen, Beispiele).
+- Die Prompt-Vorschau erhöht das Vertrauen in die KI.
+- Die Historie wird als nützlich für die Nachvollziehbarkeit wahrgenommen; der Preisgraph wurde – auch über die Aufgaben hinaus – als der verständlichste Einstieg in die Formel-Logik genannt.
+
+### Positive Rückmeldungen
+
+- Übersichtliche Navigation.
+- Klare Trennung zwischen Produkten und Strategien.
+- Transparente KI-Integration durch die Prompt-Vorschau.
+- Historie/Audit-Trail vermittelt Vertrauen.
+
+## **10. Ableitungen für den Prototyp**
+
+- **Umgesetzte Änderungen (vorhanden im Prototyp):**
+  - Token-Buttons im Formel-Editor, um Variablen per Klick statt Tippen einzufügen (zu F1).
+  - Beispiel-Formel als Platzhalter im Eingabefeld und Fancy-Formel-Button („Ausführlich") für eine KI-generierte Beispielformel (zu F3).
+  - Beschreibender Platzhalter im Kontext-Feld, der Beispielinhalte vorgibt (zu F2).
+  - Prompt-Vorschau, Begründung und KI-Badge als Transparenz-Schicht (zu F4).
+- **Bewusst nicht umgesetzt (Wontfix) mit Begründung:**
+  - Historienfilter/-suche bei vielen Produkten – außerhalb des Prototyp-Scopes (zu F5).
+  - Erweiterte KI-Optimierungsfunktionen – nicht Teil der Anforderungen.
+- **Bugs aus den User-Tests:** keine. Der einzige Bug des Projekts (BUG-001, KI-Markierung) stammt aus dem Co-Testing im Nacht-Sprint, nicht aus den User-Tests – siehe [`bug-log.md`](./bug-log.md).
+
+## **11. Reflexion zur Methode**
+
+Drei Personen sind für einen Prototyp eine tragfähige Stichprobe: Die unterschiedlichen Profile stolperten an unterschiedlichen Stellen (UT-01 an den Formelvariablen, UT-02 wünschte Vorlagen, UT-03 dachte in Mengen-/Lagerszenarien) und ergaben zusammen ein breiteres Bild als drei ähnliche Tester:innen. Für eine zweite Iteration wäre eine weitere Runde nach Umsetzung der Fixes sinnvoll, um deren Wirkung zu verifizieren.
