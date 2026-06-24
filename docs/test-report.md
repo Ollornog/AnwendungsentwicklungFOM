@@ -12,7 +12,7 @@ Die automatisierten pytest-Tests im Backend liegen in Daniels Verantwortung und 
 | Externe User-Tests durchgeführt | 3 |
 | Bugs aus QS-Phase gemeldet | 0 |
 | Bekannte offene Bugs | 0 |
-| Usability-Findings mit Umsetzung | 2 |
+| Usability-Findings mit Umsetzung | 3 |
 | Wontfix mit Begründung | 1 |
 
 **Gesamturteil:**  
@@ -67,25 +67,27 @@ Jede:r hat die sechs vorgegebenen Aufgaben durchlaufen (Anmelden, Produkt anlege
 
 | \# | Finding | UT-01 | UT-02 | UT-03 | Kategorie | Priorität | Entscheidung |
 | :---- | :---- | :---: | :---: | :---: | :---- | :---- | :---- |
-| F1 | Formel-Syntax für Nicht-Programmierer:innen schwer zugänglich – Variablennamen wie `cost_price` wirken technisch | ✓ |  | ✓ | Usability | Mittel | Fix – Token-Buttons im Formel-Editor sichtbar gemacht, Fancy-Formel-Button ergänzt |
-| F2 | Kontext-Feld beim Produkt unklar – Testpersonen wussten nicht, wofür der Freitext verwendet wird | ✓ | ✓ |  | Verständlichkeit | Mittel | Fix – Beschriftung präzisiert, Hinweis ergänzt, dass der Text an die KI übergeben wird |
-| F3 | Mobile-Ansicht schlecht bedienbar – Slider und Formel-Editor funktionieren auf kleinen Bildschirmen nicht sauber |  | ✓ |  | Usability | Niedrig | Wontfix – Mobile-Layout explizit out-of-scope laut `requirements.md` FR-38; Demo-Zielumgebung ist Desktop-Browser |
+| F1 | Formelvariablen (`demand`, `stock`, `cost_price`) nicht selbsterklärend | ✓ | ✓ |  | Usability | Hoch | Fix – Token-Buttons im Formel-Editor (Variablen per Klick) plus Hinweiszeile |
+| F2 | Zweck des Kontext-Felds unklar | ✓ |  |  | Verständlichkeit | Mittel | Fix – beschreibender Platzhalter mit Beispielinhalten; KI-Bezug über die Prompt-Vorschau einsehbar |
+| F3 | Beispiel-/Vorlage-Formeln fehlen |  | ✓ |  | Feature-Wunsch | Mittel | Fix – Beispiel-Formel als Platzhalter plus Fancy-Formel-Button („Ausführlich") |
+| F4 | KI-Vorschlag wird ungeprüft übernommen / Prompt für Laien zu technisch | ✓ | ✓ |  | Verständlichkeit | Niedrig | By Design – Prompt-Vorschau, Begründung und KI-Badge; Human-in-the-Loop |
+| F5 | Historie wird bei vielen Produkten unübersichtlich |  |  | ✓ | Usability | Niedrig | Wontfix – Historienfilter außerhalb des Prototyp-Scopes |
 
 ### 
 
 ### Positive Rückmeldungen (wiederkehrend)
 
-- Simulator mit Slidern wirkte auf alle drei Testpersonen greifbar und gut verständlich  
-- Preisgraph wurde spontan als „der beste Einstieg" bezeichnet, weil er abstrakte Formeln visuell erfahrbar macht  
-- Prompt-Preview vor dem KI-Aufruf schuf Vertrauen – zwei Testpersonen kommentierten positiv, dass der Prompt vorher sichtbar ist  
-- Historie mit KI-Badge verstanden alle drei auf den ersten Blick
+- Übersichtliche Navigation, klare Trennung zwischen Produkten und Strategien  
+- Preisgraph wurde – auch über die Aufgaben hinaus – als „der beste Einstieg" in die Formel-Logik bezeichnet  
+- Prompt-Vorschau vor dem KI-Aufruf schuf Vertrauen – zwei Testpersonen kommentierten positiv, dass der Prompt vorher sichtbar ist  
+- Historie/Audit-Trail wurde als nützlich für die Nachvollziehbarkeit wahrgenommen
 
 ### 
 
 ### Antworten auf die Kernfragen (Tendenzen)
 
-- **Vertrauen in KI-Vorschlag:** zwei von drei vertrauten dem Vorschlag eingeschränkt („ich würde die Formeln immer nochmal prüfen"). Das bestätigt das Human-in-the-Loop-Design.  
-- **Einsatz in echtem Shop:** zwei von drei würden das Tool als Unterstützung einsetzen, sofern es an einen echten Shop angebunden ist. Eine Testperson sah den Einsatz zurückhaltender.
+- **Vertrauen in KI-Vorschlag:** mittel (UT-01, UT-03) bis hoch (UT-02, wegen der sichtbaren Prompt-Vorschau). UT-03 verglich den Vorschlag mit eigener Erfahrung – das bestätigt das Human-in-the-Loop-Design.  
+- **Einsatz in echtem Shop:** alle drei würden das Tool einsetzen, mit Einschränkungen – UT-01 nach kurzer Schulung, UT-03 vor allem für kleinere Shops.
 
 ---
 
@@ -100,7 +102,7 @@ Jede:r hat die sechs vorgegebenen Aufgaben durchlaufen (Anmelden, Produkt anlege
 
 BUG-001 (fehlende KI-Markierung in der Preishistorie) entstand aus dem Co-Testing während Daniels Entwicklungssprint, also vor Beginn der strukturierten QS-Phase. Der Fix ist in ADR 0006 dokumentiert und wurde von mir nachgetestet. Der zugehörige Testfall TC-LLM-01 wurde in die Test-Matrix aufgenommen, um Regressionen vorzubeugen.
 
-Die QS-Phase selbst hat keine neuen Bugs hervorgebracht. Die Prüfung hat aber zwei Usability-Findings gebracht, die als Verbesserungen umgesetzt wurden, und ein drittes, das bewusst nicht adressiert wird.
+Die QS-Phase selbst hat keine neuen Bugs hervorgebracht. Die externen User-Tests brachten fünf Usability-/Verständnis-Findings: drei wurden umgesetzt (F1–F3), eines ist bereits durch das bestehende Design abgedeckt (F4), eines bleibt bewusst out-of-scope (F5, Historienfilter).
 
 ---
 
@@ -121,6 +123,6 @@ Das Zusammenspiel der drei Ebenen ergibt eine glaubwürdige Qualitätsaussage, o
 ## **7\. Offene Punkte und Ausblick**
 
 - Keine offenen Bugs.  
-- Ein Wontfix: Mobile-Layout. Bei einem Produktivbetrieb wäre ein responsives Layout zu ergänzen.  
+- Ein Wontfix aus den User-Tests: Historienfilter bei vielen Produkten. Mobile-Layout bleibt generell out-of-scope (`requirements.md` FR-38); beides wäre für den Produktivbetrieb zu ergänzen.  
 - Für eine zweite Iteration empfehlenswert: eine weitere Runde User-Tests nach Umsetzung der Verbesserungen, um die Wirkung der Änderungen zu validieren.  
 - Ebenfalls für den Produktivbetrieb relevant: Last- und Performance-Tests mit realistischen Produktmengen (der Prototyp wurde mit acht Seed-Produkten geprüft).
